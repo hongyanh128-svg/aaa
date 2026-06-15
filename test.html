@@ -1,0 +1,2107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG检索增强生成虚拟仿真实验平台</title>
+<style>
+:root{
+  --primary:#1a3a6e;
+  --primary-light:#2356a8;
+  --accent:#0ea5e9;
+  --accent2:#06b6d4;
+  --success:#10b981;
+  --warning:#f59e0b;
+  --danger:#ef4444;
+  --bg:#f0f4fb;
+  --surface:#fff;
+  --surface2:#f8fafd;
+  --border:#dde3ef;
+  --text:#1e293b;
+  --text2:#475569;
+  --text3:#94a3b8;
+  --radius:12px;
+  --shadow:0 2px 12px rgba(26,58,110,0.08);
+  --shadow-lg:0 8px 32px rgba(26,58,110,0.13);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'PingFang SC','Microsoft YaHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ============ HEADER ============ */
+.header{
+  background:linear-gradient(135deg,#0f2352 0%,#1a3a6e 50%,#1e4d9a 100%);
+  color:#fff;padding:0 2rem;position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 16px rgba(0,0,0,0.18);
+}
+.header-inner{max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;height:64px;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:40px;height:40px;background:rgba(255,255,255,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;}
+.logo-icon svg{width:22px;height:22px;fill:#7dd3fc;}
+.logo-text{font-size:17px;font-weight:600;letter-spacing:.3px;}
+.logo-sub{font-size:11px;opacity:.65;margin-top:1px;}
+.nav{display:flex;gap:4px;}
+.nav-btn{padding:7px 14px;border-radius:8px;background:transparent;border:none;color:rgba(255,255,255,.7);font-size:13px;cursor:pointer;transition:all .2s;}
+.nav-btn:hover,.nav-btn.active{background:rgba(255,255,255,.12);color:#fff;}
+.score-chip{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 14px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;}
+.score-chip .dot{width:8px;height:8px;border-radius:50%;background:#4ade80;animation:pulse 2s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* ============ PROGRESS BAR ============ */
+.progress-bar-wrap{background:rgba(255,255,255,.08);height:3px;}
+.progress-bar{height:3px;background:linear-gradient(90deg,#38bdf8,#818cf8);transition:width .6s ease;}
+
+/* ============ MAIN ============ */
+.main{max-width:1400px;margin:0 auto;padding:2rem;}
+
+/* ============ HERO ============ */
+.hero{background:linear-gradient(135deg,#0f2352,#1a3a6e,#1e4d9a);border-radius:20px;padding:3rem 3rem 2.5rem;color:#fff;margin-bottom:2rem;position:relative;overflow:hidden;}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:300px;height:300px;border-radius:50%;background:rgba(255,255,255,.04);}
+.hero::after{content:'';position:absolute;bottom:-80px;left:200px;width:200px;height:200px;border-radius:50%;background:rgba(56,189,248,.06);}
+.hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.3);border-radius:20px;padding:5px 14px;font-size:12px;color:#7dd3fc;margin-bottom:1.2rem;}
+.hero h1{font-size:28px;font-weight:700;line-height:1.3;margin-bottom:.8rem;}
+.hero-desc{font-size:14px;opacity:.75;line-height:1.7;max-width:600px;margin-bottom:1.5rem;}
+.hero-stats{display:flex;gap:2rem;}
+.stat-item{text-align:center;}
+.stat-num{font-size:26px;font-weight:700;color:#7dd3fc;}
+.stat-label{font-size:12px;opacity:.6;margin-top:2px;}
+.hero-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:1.5rem;}
+.hero-tag{padding:4px 12px;border-radius:20px;font-size:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);}
+
+/* ============ SECTION ============ */
+.section{display:none;}
+.section.active{display:block;}
+
+/* ============ PHASE NAVIGATOR ============ */
+.phase-nav{display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;}
+.phase-btn{flex:1;min-width:140px;padding:14px 16px;border-radius:var(--radius);background:var(--surface);border:1.5px solid var(--border);cursor:pointer;text-align:left;transition:all .25s;position:relative;}
+.phase-btn:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--shadow);}
+.phase-btn.active{border-color:var(--primary-light);background:#eef3ff;}
+.phase-btn.done{border-color:var(--success);background:#f0fdf4;}
+.phase-btn.locked{opacity:.5;cursor:not-allowed;}
+.phase-btn .phase-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;font-size:18px;}
+.phase-btn .phase-title{font-size:13px;font-weight:600;}
+.phase-btn .phase-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+.phase-btn .phase-score{position:absolute;top:10px;right:10px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;}
+.phase-btn.active .phase-score{background:#dbeafe;color:#1d4ed8;}
+.phase-btn.done .phase-score{background:#dcfce7;color:#15803d;}
+.lock-icon{position:absolute;top:10px;right:10px;font-size:14px;}
+
+/* ============ CARDS ============ */
+.card{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);padding:1.5rem;margin-bottom:1rem;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;}
+.card-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;}
+.card-title .icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;}
+
+/* ============ THEORY PANEL ============ */
+.theory-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.theory-item{padding:1rem;border-radius:10px;border:1px solid var(--border);}
+.theory-item h4{font-size:13px;font-weight:600;margin-bottom:.5rem;display:flex;align-items:center;gap:6px;}
+.theory-item p{font-size:12px;color:var(--text2);line-height:1.7;}
+.concept-chip{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:500;margin:3px;cursor:pointer;transition:all .2s;}
+
+/* ============ QUIZ ============ */
+.quiz-progress{display:flex;gap:6px;margin-bottom:1.2rem;}
+.quiz-dot{width:28px;height:6px;border-radius:3px;background:var(--border);transition:all .3s;}
+.quiz-dot.done{background:var(--success);}
+.quiz-dot.active{background:var(--accent);}
+.quiz-question{font-size:14px;font-weight:500;margin-bottom:1rem;line-height:1.6;}
+.quiz-options{display:flex;flex-direction:column;gap:8px;}
+.quiz-option{padding:11px 14px;border-radius:10px;border:1.5px solid var(--border);cursor:pointer;font-size:13px;transition:all .2s;display:flex;align-items:center;gap:10px;}
+.quiz-option:hover{border-color:var(--accent);background:#f0f9ff;}
+.quiz-option.selected{border-color:var(--primary-light);background:#eef3ff;}
+.quiz-option.correct{border-color:var(--success);background:#f0fdf4;color:#15803d;}
+.quiz-option.wrong{border-color:var(--danger);background:#fff1f2;color:#b91c1c;}
+.quiz-option-label{width:22px;height:22px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0;}
+.quiz-explain{margin-top:.8rem;padding:.8rem 1rem;border-radius:8px;font-size:12px;line-height:1.7;}
+.quiz-explain.correct{background:#f0fdf4;color:#166534;border-left:3px solid var(--success);}
+.quiz-explain.wrong{background:#fff1f2;color:#991b1b;border-left:3px solid var(--danger);}
+
+/* ============ STEP FLOW ============ */
+.step-flow{display:flex;flex-direction:column;gap:.8rem;}
+.step-item{display:flex;gap:12px;align-items:flex-start;padding:1rem 1.2rem;border-radius:10px;border:1.5px solid var(--border);transition:all .3s;cursor:pointer;position:relative;}
+.step-item:hover{border-color:var(--accent);box-shadow:var(--shadow);}
+.step-item.active{border-color:var(--primary-light);background:#f8faff;}
+.step-item.done{border-color:var(--success);background:#f0fdf4;}
+.step-item.locked{opacity:.45;cursor:not-allowed;}
+.step-num{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;flex-shrink:0;}
+.step-item.done .step-num{background:#dcfce7;color:#15803d;}
+.step-item.active .step-num{background:#dbeafe;color:#1d4ed8;}
+.step-item:not(.done):not(.active):not(.locked) .step-num{background:#f1f5f9;color:var(--text3);}
+.step-item.locked .step-num{background:#f1f5f9;color:var(--text3);}
+.step-content{flex:1;}
+.step-title{font-size:13px;font-weight:600;margin-bottom:3px;}
+.step-desc{font-size:12px;color:var(--text2);line-height:1.5;}
+.step-badge{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;font-weight:600;padding:3px 9px;border-radius:8px;}
+.step-badge.done{background:#dcfce7;color:#15803d;}
+.step-badge.points{background:#dbeafe;color:#1e40af;}
+
+/* ============ OPERATION PANEL ============ */
+.op-panel{background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;}
+.op-header{padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;}
+.op-body{padding:1.5rem;}
+
+/* ============ CONTROLS ============ */
+.ctrl-row{display:flex;align-items:center;gap:12px;margin-bottom:1rem;}
+.ctrl-label{font-size:12px;font-weight:600;color:var(--text2);min-width:90px;}
+.ctrl-value{font-size:13px;font-weight:600;color:var(--primary-light);min-width:40px;}
+input[type=range]{flex:1;height:4px;-webkit-appearance:none;background:var(--border);border-radius:2px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--primary-light);cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.2);}
+select{padding:7px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;background:var(--surface);color:var(--text);outline:none;cursor:pointer;}
+select:focus{border-color:var(--accent);}
+
+.toggle-group{display:flex;border-radius:8px;overflow:hidden;border:1.5px solid var(--border);}
+.toggle-btn{padding:7px 16px;font-size:12px;font-weight:500;background:transparent;border:none;cursor:pointer;transition:all .2s;color:var(--text2);}
+.toggle-btn.active{background:var(--primary-light);color:#fff;}
+
+/* ============ BUTTONS ============ */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .2s;}
+.btn-primary{background:var(--primary-light);color:#fff;}
+.btn-primary:hover{background:var(--primary);transform:translateY(-1px);box-shadow:0 4px 12px rgba(26,58,110,.25);}
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover{background:#059669;transform:translateY(-1px);}
+.btn-outline{background:transparent;color:var(--primary-light);border:1.5px solid var(--primary-light);}
+.btn-outline:hover{background:#eef3ff;}
+.btn-sm{padding:6px 13px;font-size:12px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important;}
+
+/* ============ DOC SELECTOR ============ */
+.doc-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+.doc-card{padding:1rem;border-radius:10px;border:2px solid var(--border);cursor:pointer;transition:all .2s;position:relative;}
+.doc-card:hover{border-color:var(--accent);}
+.doc-card.selected{border-color:var(--primary-light);background:#eef3ff;}
+.doc-card.multi-selected{border-color:var(--accent2);background:#ecfeff;}
+.doc-card-icon{font-size:22px;margin-bottom:.5rem;}
+.doc-card-name{font-size:13px;font-weight:600;}
+.doc-card-desc{font-size:11px;color:var(--text3);margin-top:3px;}
+.doc-card-check{position:absolute;top:8px;right:8px;width:18px;height:18px;border-radius:50%;background:var(--primary-light);color:#fff;font-size:10px;display:none;align-items:center;justify-content:center;font-weight:700;}
+.doc-card.selected .doc-card-check,.doc-card.multi-selected .doc-card-check{display:flex;}
+
+/* ============ ANIMATION PANEL ============ */
+.anim-panel{border-radius:12px;border:1px solid var(--border);background:#f8faff;padding:1.2rem;margin:1rem 0;}
+.anim-pipeline{display:flex;align-items:center;gap:0;overflow-x:auto;padding:.5rem 0;}
+.pipe-step{display:flex;flex-direction:column;align-items:center;min-width:80px;}
+.pipe-box{width:64px;height:44px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid var(--border);background:#fff;transition:all .4s;position:relative;}
+.pipe-box.active{border-color:var(--accent);background:#e0f2fe;transform:scale(1.1);}
+.pipe-box.done{border-color:var(--success);background:#dcfce7;}
+.pipe-arrow{font-size:16px;color:var(--text3);margin:0 4px;flex-shrink:0;margin-top:-20px;}
+.pipe-label{font-size:10px;color:var(--text3);margin-top:4px;text-align:center;}
+.progress-ring{width:100%;height:6px;background:var(--border);border-radius:3px;margin:.5rem 0;overflow:hidden;}
+.progress-fill{height:6px;background:linear-gradient(90deg,var(--accent),var(--primary-light));border-radius:3px;width:0%;transition:width .4s ease;}
+
+/* ============ QA PANEL ============ */
+.qa-input-row{display:flex;gap:8px;}
+.qa-input{flex:1;padding:10px 14px;border-radius:10px;border:1.5px solid var(--border);font-size:13px;outline:none;font-family:inherit;}
+.qa-input:focus{border-color:var(--accent);}
+.qa-messages{max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:.5rem 0;}
+.qa-msg{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.7;max-width:85%;}
+.qa-msg.user{background:#eef3ff;color:var(--primary);align-self:flex-end;border-bottom-right-radius:3px;}
+.qa-msg.assistant{background:#f0fdf4;color:#166534;align-self:flex-start;border-bottom-left-radius:3px;}
+.qa-msg.system{background:#fff7ed;color:#c2410c;align-self:flex-start;font-style:italic;}
+.qa-msg.error{background:#fff1f2;color:#b91c1c;align-self:flex-start;}
+.retrieval-context{margin:.5rem 0;padding:.8rem 1rem;background:#f8faff;border-radius:8px;border-left:3px solid var(--accent);}
+.retrieval-context h5{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.5px;}
+.retrieval-item{font-size:12px;color:var(--text2);margin-bottom:.4rem;padding:.4rem .6rem;background:#fff;border-radius:6px;border:1px solid var(--border);}
+
+/* ============ METRICS ============ */
+.metrics-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:.8rem 0;}
+.metric-card{background:var(--surface2);border-radius:10px;padding:.9rem;text-align:center;}
+.metric-val{font-size:22px;font-weight:700;}
+.metric-val.good{color:var(--success);}
+.metric-val.mid{color:var(--warning);}
+.metric-val.bad{color:var(--danger);}
+.metric-label{font-size:11px;color:var(--text3);margin-top:3px;}
+
+/* ============ CHART ============ */
+.mini-chart{display:flex;gap:4px;align-items:flex-end;height:60px;padding:.3rem 0;}
+.chart-bar{flex:1;border-radius:3px 3px 0 0;transition:height .4s;min-width:12px;}
+
+/* ============ COMPARE TABLE ============ */
+.compare-table{width:100%;border-collapse:collapse;font-size:12px;margin:.8rem 0;}
+.compare-table th{background:#f8faff;padding:8px 10px;text-align:left;font-weight:600;border-bottom:2px solid var(--border);}
+.compare-table td{padding:7px 10px;border-bottom:1px solid var(--border);}
+.compare-table tr:hover td{background:#f8faff;}
+
+/* ============ FAULT PANEL ============ */
+.fault-card{padding:1rem;border-radius:10px;border:1.5px solid var(--border);margin:.6rem 0;cursor:pointer;transition:all .2s;}
+.fault-card:hover{border-color:var(--warning);}
+.fault-card.selected{border-color:var(--warning);background:#fffbeb;}
+.fault-card.solved{border-color:var(--success);background:#f0fdf4;}
+.fault-tag{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;font-size:11px;font-weight:600;margin-bottom:.4rem;}
+.fault-tag.error{background:#fee2e2;color:#b91c1c;}
+.fault-tag.warn{background:#fef3c7;color:#92400e;}
+.fault-name{font-size:13px;font-weight:600;margin-bottom:.3rem;}
+.fault-desc{font-size:12px;color:var(--text2);}
+
+/* ============ REPORT FORM ============ */
+.report-form{display:grid;gap:1rem;}
+.form-group label{font-size:12px;font-weight:600;color:var(--text2);display:block;margin-bottom:5px;}
+.form-group input,.form-group textarea{width:100%;padding:9px 12px;border-radius:8px;border:1.5px solid var(--border);font-size:13px;font-family:inherit;outline:none;resize:vertical;}
+.form-group input:focus,.form-group textarea:focus{border-color:var(--accent);}
+
+/* ============ TOAST ============ */
+.toast-wrap{position:fixed;top:80px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:11px 18px;border-radius:10px;font-size:13px;font-weight:500;color:#fff;display:flex;align-items:center;gap:8px;min-width:220px;animation:slideIn .3s ease;box-shadow:0 4px 16px rgba(0,0,0,.15);}
+.toast.success{background:#059669;}
+.toast.error{background:#dc2626;}
+.toast.info{background:var(--primary-light);}
+.toast.warn{background:#d97706;}
+@keyframes slideIn{from{transform:translateX(50px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+
+/* ============ SCORE POPUP ============ */
+.score-popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;border-radius:20px;padding:2.5rem 3rem;text-align:center;z-index:9999;box-shadow:0 20px 60px rgba(0,0,0,.2);min-width:280px;}
+.score-popup h3{font-size:18px;font-weight:700;margin-bottom:.5rem;}
+.score-popup .score-big{font-size:56px;font-weight:800;color:var(--primary-light);line-height:1;}
+.score-popup p{font-size:13px;color:var(--text2);margin-top:.5rem;}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9998;}
+
+/* ============ FOOTER ============ */
+.footer{background:var(--surface);border-top:1px solid var(--border);padding:1.2rem 2rem;text-align:center;font-size:12px;color:var(--text3);margin-top:3rem;}
+
+/* ============ TAG ============ */
+.tag{display:inline-flex;align-items:center;padding:2px 9px;border-radius:9px;font-size:11px;font-weight:500;}
+.tag-blue{background:#dbeafe;color:#1d4ed8;}
+.tag-green{background:#dcfce7;color:#15803d;}
+.tag-orange{background:#fed7aa;color:#c2410c;}
+.tag-purple{background:#ede9fe;color:#7c3aed;}
+.tag-red{background:#fee2e2;color:#b91c1c;}
+.tag-gray{background:#f1f5f9;color:var(--text2);}
+
+/* ============ SECTION TABS ============ */
+.section-tabs{display:flex;gap:3px;background:var(--surface2);border-radius:10px;padding:4px;margin-bottom:1.5rem;border:1px solid var(--border);}
+.section-tab{flex:1;padding:8px;text-align:center;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;color:var(--text2);}
+.section-tab.active{background:#fff;color:var(--primary);box-shadow:0 1px 4px rgba(0,0,0,.08);}
+
+/* responsive */
+@media(max-width:900px){
+  .theory-grid{grid-template-columns:1fr;}
+  .doc-cards{grid-template-columns:1fr 1fr;}
+  .metrics-row{grid-template-columns:1fr 1fr;}
+  .hero h1{font-size:22px;}
+  .hero-stats{gap:1rem;}
+  .main{padding:1rem;}
+}
+@media(max-width:600px){
+  .doc-cards{grid-template-columns:1fr;}
+  .phase-nav{flex-direction:column;}
+  .header-inner{flex-wrap:wrap;height:auto;padding:.8rem 0;}
+  .nav{display:none;}
+  .hero-stats{gap:.8rem;}
+}
+
+/* RAG Flow Diagram */
+.rag-flow{display:flex;align-items:center;gap:0;padding:1.2rem;overflow-x:auto;background:#f8faff;border-radius:12px;border:1px solid var(--border);}
+.flow-node{display:flex;flex-direction:column;align-items:center;min-width:72px;}
+.flow-box{padding:.5rem .8rem;border-radius:8px;font-size:11px;font-weight:600;text-align:center;border:2px solid;transition:all .3s;}
+.flow-box.retrieval{border-color:#3b82f6;background:#eff6ff;color:#1e40af;}
+.flow-box.generation{border-color:#8b5cf6;background:#f5f3ff;color:#4c1d95;}
+.flow-box.db{border-color:#0ea5e9;background:#e0f2fe;color:#0c4a6e;}
+.flow-arrow{font-size:18px;color:var(--text3);padding:0 4px;margin-top:-10px;}
+.flow-label{font-size:10px;color:var(--text3);margin-top:4px;text-align:center;}
+
+/* Collapsible */
+.collapse-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:.6rem 0;font-size:13px;font-weight:600;border-bottom:1px solid var(--border);}
+.collapse-body{overflow:hidden;max-height:0;transition:max-height .35s ease;}
+.collapse-body.open{max-height:600px;}
+</style>
+</head>
+<body>
+
+<!-- TOAST -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
+        <div class="logo-text">RAG 虚拟仿真实验平台</div>
+        <div class="logo-sub">检索增强生成 · 大语言模型实训</div>
+      </div>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" onclick="showSection('home')">实验首页</button>
+      <button class="nav-btn" onclick="showSection('prelearn')">课前预习</button>
+      <button class="nav-btn" onclick="showSection('lab')">实验操作</button>
+      <button class="nav-btn" onclick="showSection('report')">实验报告</button>
+    </nav>
+    <div class="score-chip">
+      <span class="dot"></span>
+      <span id="headerScore">0</span> / 100 分
+    </div>
+  </div>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar" id="globalProgressBar" style="width:0%"></div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- =========== HOME SECTION =========== -->
+<section class="section active" id="sectionHome">
+  <div class="hero">
+    <div class="hero-badge">⚡ 虚拟仿真实验 · 免登录访问</div>
+    <h1>基于大语言模型的RAG检索增强生成<br>虚拟仿真实验平台</h1>
+    <p class="hero-desc">围绕检索增强生成（Retrieval-Augmented Generation）全技术链路，提供沉浸式可视化实训体验。无需编写代码，点击即可完成企业级RAG系统搭建与优化。</p>
+    <div class="hero-stats">
+      <div class="stat-item"><div class="stat-num">6</div><div class="stat-label">核心模块</div></div>
+      <div class="stat-item"><div class="stat-num">16</div><div class="stat-label">实训任务</div></div>
+      <div class="stat-item"><div class="stat-num">3</div><div class="stat-label">递进层级</div></div>
+      <div class="stat-item"><div class="stat-num">100</div><div class="stat-label">总分值</div></div>
+    </div>
+    <div class="hero-tags">
+      <span class="hero-tag">📚 人工智能应用开发</span>
+      <span class="hero-tag">🔍 自然语言处理</span>
+      <span class="hero-tag">⚙️ 软件工程综合实训</span>
+      <span class="hero-tag">🤖 大数据技术</span>
+    </div>
+  </div>
+
+  <!-- 实验流程概览 -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="card-header">
+      <div class="card-title"><div class="icon" style="background:#dbeafe;color:#1d4ed8;">🗺️</div> 实验流程概览</div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+      <div style="text-align:center;padding:1.2rem;border-radius:12px;background:#f0f9ff;border:1px solid #bae6fd;">
+        <div style="font-size:28px;margin-bottom:.5rem;">📖</div>
+        <div style="font-weight:600;font-size:14px;color:#0369a1;">课前预习自测</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:.4rem;">学习RAG原理<br>5题全对解锁实训</div>
+        <div style="margin-top:.8rem;"><span class="tag tag-blue">知识储备</span></div>
+      </div>
+      <div style="text-align:center;padding:1.2rem;border-radius:12px;background:#f0fdf4;border:1px solid #bbf7d0;">
+        <div style="font-size:28px;margin-bottom:.5rem;">🧪</div>
+        <div style="font-weight:600;font-size:14px;color:#15803d;">分层实训操作</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:.4rem;">基础→进阶→创新<br>三层递进 共70分</div>
+        <div style="margin-top:.8rem;"><span class="tag tag-green">核心实训</span></div>
+      </div>
+      <div style="text-align:center;padding:1.2rem;border-radius:12px;background:#fefce8;border:1px solid #fde68a;">
+        <div style="font-size:28px;margin-bottom:.5rem;">📝</div>
+        <div style="font-weight:600;font-size:14px;color:#92400e;">课后报告提交</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:.4rem;">撰写实验报告<br>教师评阅 共30分</div>
+        <div style="margin-top:.8rem;"><span class="tag tag-orange">总结提升</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAG技术架构图 -->
+  <div class="card" style="margin-bottom:1rem;">
+    <div class="card-header">
+      <div class="card-title"><div class="icon" style="background:#ede9fe;color:#7c3aed;">🏗️</div> RAG 技术架构图</div>
+      <span class="tag tag-purple">核心原理</span>
+    </div>
+    <div class="rag-flow">
+      <div class="flow-node">
+        <div class="flow-box retrieval">📄<br>原始文档</div>
+        <div class="flow-label">输入</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-box retrieval">🧹<br>数据清洗</div>
+        <div class="flow-label">预处理</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-box retrieval">✂️<br>文本分块</div>
+        <div class="flow-label">分块</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-box db">📐<br>向量化</div>
+        <div class="flow-label">嵌入</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-box db">🗄️<br>向量库</div>
+        <div class="flow-label">存储</div>
+      </div>
+      <div class="flow-arrow" style="border-top:2px dashed #94a3b8;width:30px;display:block;margin:0 4px;"></div>
+      <div class="flow-node">
+        <div class="flow-box generation">❓<br>用户提问</div>
+        <div class="flow-label">查询</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-box generation">🔍<br>语义检索</div>
+        <div class="flow-label">召回</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-box generation">📋<br>提示词构建</div>
+        <div class="flow-label">工程</div>
+      </div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">
+        <div class="flow-box generation">🤖<br>LLM生成</div>
+        <div class="flow-label">输出</div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--text3);margin-top:.8rem;text-align:center;">检索阶段（蓝色）：构建知识库 &nbsp;|&nbsp; 生成阶段（紫色）：查询与回答生成</p>
+  </div>
+
+  <!-- 分值说明 -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="icon" style="background:#fef3c7;color:#92400e;">📊</div> 考核评分体系</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:.8rem;color:var(--text2);">过程考核（70分）</div>
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .9rem;border-radius:8px;background:#f0f9ff;border:1px solid #bae6fd;">
+            <span style="font-size:13px;">🟢 基础层实训</span><span class="tag tag-blue">30分</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .9rem;border-radius:8px;background:#f0fdf4;border:1px solid #bbf7d0;">
+            <span style="font-size:13px;">🔵 进阶层实训</span><span class="tag tag-green">20分</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .9rem;border-radius:8px;background:#fdf4ff;border:1px solid #e9d5ff;">
+            <span style="font-size:13px;">🟣 创新层实训</span><span class="tag tag-purple">20分</span>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:600;margin-bottom:.8rem;color:var(--text2);">终结考核（30分）</div>
+        <div style="display:flex;flex-direction:column;gap:.5rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .9rem;border-radius:8px;background:#fff7ed;border:1px solid #fed7aa;">
+            <span style="font-size:13px;">🎤 现场实操演示</span><span class="tag tag-orange">10分</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:.6rem .9rem;border-radius:8px;background:#fefce8;border:1px solid #fde68a;">
+            <span style="font-size:13px;">📝 在线实验报告</span><span class="tag tag-orange">20分</span>
+          </div>
+        </div>
+        <div style="margin-top:.8rem;padding:.7rem 1rem;background:var(--surface2);border-radius:8px;font-size:12px;color:var(--text2);">
+          ⚠️ 现场实操演示由教师线下评分，实验报告在平台提交后由教师在线批阅
+        </div>
+      </div>
+    </div>
+    <div style="text-align:center;margin-top:1.2rem;">
+      <button class="btn btn-primary" onclick="showSection('prelearn')">开始实验 →</button>
+    </div>
+  </div>
+</section>
+
+<!-- =========== PRELEARN SECTION =========== -->
+<section class="section" id="sectionPrelearn">
+  <div class="phase-nav">
+    <div class="phase-btn done" id="theoryPhaseBtn" onclick="switchPrelearnTab('theory')">
+      <div class="phase-icon" style="background:#dbeafe;">📖</div>
+      <div class="phase-title">理论学习</div>
+      <div class="phase-sub">RAG原理讲解</div>
+    </div>
+    <div class="phase-btn" id="quizPhaseBtn" onclick="switchPrelearnTab('quiz')">
+      <div class="phase-icon" style="background:#fef3c7;">✏️</div>
+      <div class="phase-title">预习自测</div>
+      <div class="phase-sub">5题全对解锁</div>
+      <span class="phase-score" id="quizScore">0/5</span>
+    </div>
+  </div>
+
+  <!-- 理论内容 -->
+  <div id="tabTheory">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="icon" style="background:#dbeafe;">🧠</div> RAG 技术原理精讲</div>
+        <span class="tag tag-blue">理论基础</span>
+      </div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:1.2rem;">
+        检索增强生成（Retrieval-Augmented Generation, RAG）是当前解决大语言模型<strong>幻觉问题</strong>的主流技术方案。其核心逻辑为「外部知识库检索 + 大语言模型生成」，通过引入外部可信知识，从根源上抑制模型生成虚假内容的概率。
+      </div>
+      <div class="theory-grid">
+        <div class="theory-item" style="border-color:#bae6fd;background:#f0f9ff;">
+          <h4 style="color:#0369a1;">📄 文档预处理</h4>
+          <p>对原始文档进行清洗、去重、格式统一、无效字符过滤等操作，去除冗余信息，为后续处理奠定基础。数据质量直接影响RAG系统的最终效果。</p>
+        </div>
+        <div class="theory-item" style="border-color:#bbf7d0;background:#f0fdf4;">
+          <h4 style="color:#15803d;">✂️ 文本分块策略</h4>
+          <p>将长文档切分为语义独立、长度适中的短文本片段。常见策略：按段落分块（保持语义完整）、按固定长度分块（适合规则文档）。分块粒度影响检索精度。</p>
+        </div>
+        <div class="theory-item" style="border-color:#e9d5ff;background:#fdf4ff;">
+          <h4 style="color:#7c3aed;">📐 向量化与向量数据库</h4>
+          <p>通过嵌入模型（Embedding Model）将文本块转化为高维向量，存入向量数据库（如Faiss、Milvus、Chroma）。向量化是实现语义检索的核心技术。</p>
+        </div>
+        <div class="theory-item" style="border-color:#fed7aa;background:#fff7ed;">
+          <h4 style="color:#c2410c;">🔍 语义检索</h4>
+          <p>用户提问同样被转化为向量，通过余弦相似度计算与知识库中所有向量的相似度，召回Top-K个最相关片段。相似度阈值过高会导致召回失败。</p>
+        </div>
+        <div class="theory-item" style="border-color:#fde68a;background:#fefce8;">
+          <h4 style="color:#92400e;">💬 提示词工程</h4>
+          <p>将检索到的上下文片段、用户问题、系统角色定义拼接为完整提示词，发送给LLM。提示词的结构直接影响模型输出的质量与格式。</p>
+        </div>
+        <div class="theory-item" style="border-color:#fecaca;background:#fff1f2;">
+          <h4 style="color:#b91c1c;">🛡️ 模型幻觉抑制</h4>
+          <p>LLM幻觉（Hallucination）是指模型生成看似合理但实际错误的内容。RAG通过注入可信外部知识，约束模型的生成范围，有效降低幻觉率。</p>
+        </div>
+      </div>
+      <div style="margin-top:1.2rem;padding:1rem;background:#f8faff;border-radius:10px;border:1px solid #c7d2fe;">
+        <h4 style="font-size:13px;font-weight:600;margin-bottom:.5rem;color:#3730a3;">💡 核心参数说明</h4>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span class="concept-chip" style="background:#dbeafe;color:#1d4ed8;" onclick="showConceptTip('topk')">top_k（召回数量）</span>
+          <span class="concept-chip" style="background:#dcfce7;color:#15803d;" onclick="showConceptTip('threshold')">相似度阈值</span>
+          <span class="concept-chip" style="background:#ede9fe;color:#7c3aed;" onclick="showConceptTip('chunk')">分块大小</span>
+          <span class="concept-chip" style="background:#fef3c7;color:#92400e;" onclick="showConceptTip('ctx')">上下文窗口</span>
+          <span class="concept-chip" style="background:#fee2e2;color:#b91c1c;" onclick="showConceptTip('hallucination')">幻觉率</span>
+          <span class="concept-chip" style="background:#f0fdf4;color:#15803d;" onclick="showConceptTip('recall')">检索准确率</span>
+        </div>
+        <div id="conceptTipBox" style="display:none;margin-top:.8rem;padding:.7rem 1rem;border-radius:8px;background:#fff;border:1px solid #c7d2fe;font-size:12px;color:var(--text2);line-height:1.7;"></div>
+      </div>
+      <div style="margin-top:1rem;text-align:center;">
+        <button class="btn btn-primary" onclick="switchPrelearnTab('quiz')">完成学习，开始自测 →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 预习自测 -->
+  <div id="tabQuiz" style="display:none;">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><div class="icon" style="background:#fef3c7;">📝</div> 预习自测 <span style="font-size:12px;color:var(--text3);font-weight:400;">— 全部答对方可解锁实验</span></div>
+        <span id="quizPassBadge" class="tag tag-gray">待完成</span>
+      </div>
+      <div class="quiz-progress" id="quizProgressDots"></div>
+      <div id="quizArea"></div>
+      <div id="quizActions" style="margin-top:1rem;display:flex;gap:8px;justify-content:flex-end;"></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========== LAB SECTION =========== -->
+<section class="section" id="sectionLab">
+  <div id="labLockedMsg" style="display:none;">
+    <div style="text-align:center;padding:3rem;background:#fff7ed;border-radius:16px;border:2px dashed #fcd34d;">
+      <div style="font-size:48px;margin-bottom:1rem;">🔒</div>
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:.5rem;">请先完成课前预习自测</h3>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:1.5rem;">5道自测题全部答对后，方可进入实验操作区域</p>
+      <button class="btn btn-primary" onclick="showSection('prelearn');switchPrelearnTab('quiz')">前往预习自测 →</button>
+    </div>
+  </div>
+  <div id="labContent">
+    <div class="section-tabs">
+      <div class="section-tab active" onclick="switchLabTab('basic')">🟢 基础层（30分）</div>
+      <div class="section-tab" onclick="switchLabTab('advanced')">🔵 进阶层（20分）</div>
+      <div class="section-tab" onclick="switchLabTab('innovation')">🟣 创新层（20分）</div>
+    </div>
+
+    <!-- 基础层 -->
+    <div id="labBasic">
+      <div style="display:grid;grid-template-columns:340px 1fr;gap:1rem;">
+        <!-- 步骤列表 -->
+        <div>
+          <div class="card" style="padding:1rem;">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:.8rem;display:flex;justify-content:space-between;">
+              <span>基础层操作步骤</span>
+              <span id="basicScore" class="tag tag-blue">0/30分</span>
+            </div>
+            <div class="step-flow" id="basicStepFlow">
+              <div class="step-item active" data-step="1" onclick="activateBasicStep(1)">
+                <div class="step-num">1</div>
+                <div class="step-content">
+                  <div class="step-title">选择实验文档</div>
+                  <div class="step-desc">从内置文档库中选取实验材料</div>
+                </div>
+                <span class="step-badge points">+5分</span>
+              </div>
+              <div class="step-item locked" data-step="2" onclick="activateBasicStep(2)">
+                <div class="step-num">2</div>
+                <div class="step-content">
+                  <div class="step-title">文档清洗预处理</div>
+                  <div class="step-desc">去重、格式统一、过滤无效字符</div>
+                </div>
+                <span class="step-badge points">+5分</span>
+              </div>
+              <div class="step-item locked" data-step="3" onclick="activateBasicStep(3)">
+                <div class="step-num">3</div>
+                <div class="step-content">
+                  <div class="step-title">文本分块配置</div>
+                  <div class="step-desc">选择分块策略，预览分块效果</div>
+                </div>
+                <span class="step-badge points">+5分</span>
+              </div>
+              <div class="step-item locked" data-step="4" onclick="activateBasicStep(4)">
+                <div class="step-num">4</div>
+                <div class="step-content">
+                  <div class="step-title">向量入库操作</div>
+                  <div class="step-desc">文本向量化并存入向量数据库</div>
+                </div>
+                <span class="step-badge points">+5分</span>
+              </div>
+              <div class="step-item locked" data-step="5" onclick="activateBasicStep(5)">
+                <div class="step-num">5</div>
+                <div class="step-content">
+                  <div class="step-title">参数初始化</div>
+                  <div class="step-desc">了解默认参数配置</div>
+                </div>
+                <span class="step-badge points">+5分</span>
+              </div>
+              <div class="step-item locked" data-step="6" onclick="activateBasicStep(6)">
+                <div class="step-num">6</div>
+                <div class="step-content">
+                  <div class="step-title">基础问答测试</div>
+                  <div class="step-desc">测试RAG系统问答效果</div>
+                </div>
+                <span class="step-badge points">+5分</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- 操作面板 -->
+        <div id="basicOpPanel"></div>
+      </div>
+    </div>
+
+    <!-- 进阶层 -->
+    <div id="labAdvanced" style="display:none;">
+      <div id="advLockedMsg" style="display:none;text-align:center;padding:2rem;background:#fff7ed;border-radius:16px;border:2px dashed #fcd34d;">
+        <div style="font-size:40px;margin-bottom:1rem;">🔒</div>
+        <h3>请先完成基础层实训</h3>
+        <p style="font-size:13px;color:var(--text2);margin-top:.5rem;">完成全部6个基础层步骤后解锁</p>
+      </div>
+      <div id="advContent" style="display:none;">
+        <div style="display:grid;grid-template-columns:340px 1fr;gap:1rem;">
+          <div>
+            <div class="card" style="padding:1rem;">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:.8rem;display:flex;justify-content:space-between;">
+                <span>进阶层操作步骤</span>
+                <span id="advScore" class="tag tag-green">0/20分</span>
+              </div>
+              <div class="step-flow" id="advStepFlow">
+                <div class="step-item active" data-step="1" onclick="activateAdvStep(1)">
+                  <div class="step-num">1</div>
+                  <div class="step-content"><div class="step-title">检索参数调优</div><div class="step-desc">调整召回数量与相似度阈值</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+                <div class="step-item locked" data-step="2" onclick="activateAdvStep(2)">
+                  <div class="step-num">2</div>
+                  <div class="step-content"><div class="step-title">上下文窗口配置</div><div class="step-desc">开启多轮对话记忆</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+                <div class="step-item locked" data-step="3" onclick="activateAdvStep(3)">
+                  <div class="step-num">3</div>
+                  <div class="step-content"><div class="step-title">输出格式优化</div><div class="step-desc">选择输出格式对比效果</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+                <div class="step-item locked" data-step="4" onclick="activateAdvStep(4)">
+                  <div class="step-num">4</div>
+                  <div class="step-content"><div class="step-title">对比实验设计</div><div class="step-desc">双组参数对比分析</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+                <div class="step-item locked" data-step="5" onclick="activateAdvStep(5)">
+                  <div class="step-num">5</div>
+                  <div class="step-content"><div class="step-title">异常场景处理</div><div class="step-desc">模拟并处理典型异常</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="advOpPanel"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 创新层 -->
+    <div id="labInnovation" style="display:none;">
+      <div id="innLockedMsg" style="display:none;text-align:center;padding:2rem;background:#fdf4ff;border-radius:16px;border:2px dashed #e9d5ff;">
+        <div style="font-size:40px;margin-bottom:1rem;">🔒</div>
+        <h3>请先完成进阶层实训</h3>
+        <p style="font-size:13px;color:var(--text2);margin-top:.5rem;">完成进阶层实训后解锁</p>
+      </div>
+      <div id="innContent" style="display:none;">
+        <div style="display:grid;grid-template-columns:340px 1fr;gap:1rem;">
+          <div>
+            <div class="card" style="padding:1rem;">
+              <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:.8rem;display:flex;justify-content:space-between;">
+                <span>创新层操作步骤</span>
+                <span id="innScore" class="tag tag-purple">0/20分</span>
+              </div>
+              <div class="step-flow" id="innStepFlow">
+                <div class="step-item active" data-step="1" onclick="activateInnStep(1)">
+                  <div class="step-num">1</div>
+                  <div class="step-content"><div class="step-title">多文档混合检索</div><div class="step-desc">勾选多套文档构建多源知识库</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+                <div class="step-item locked" data-step="2" onclick="activateInnStep(2)">
+                  <div class="step-num">2</div>
+                  <div class="step-content"><div class="step-title">多轮对话记忆优化</div><div class="step-desc">连续提问验证上下文联动</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+                <div class="step-item locked" data-step="3" onclick="activateInnStep(3)">
+                  <div class="step-num">3</div>
+                  <div class="step-content"><div class="step-title">结构化输出设计</div><div class="step-desc">JSON/表格格式输出</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+                <div class="step-item locked" data-step="4" onclick="activateInnStep(4)">
+                  <div class="step-num">4</div>
+                  <div class="step-content"><div class="step-title">典型故障排查</div><div class="step-desc">定位并修复三类RAG故障</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+                <div class="step-item locked" data-step="5" onclick="activateInnStep(5)">
+                  <div class="step-num">5</div>
+                  <div class="step-content"><div class="step-title">全链路参数联合优化</div><div class="step-desc">综合调整所有参数优化系统</div></div>
+                  <span class="step-badge points">+4分</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="innOpPanel"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- =========== REPORT SECTION =========== -->
+<section class="section" id="sectionReport">
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><div class="icon" style="background:#fef3c7;">📋</div> 在线实验报告</div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-outline btn-sm" onclick="fillReportAuto()">📥 自动填入实验数据</button>
+        <button class="btn btn-success btn-sm" onclick="exportReport()">⬇️ 导出报告</button>
+      </div>
+    </div>
+    <!-- 得分汇总 -->
+    <div class="metrics-row" style="margin-bottom:1.2rem;">
+      <div class="metric-card">
+        <div class="metric-val good" id="rBasicScore">0</div>
+        <div class="metric-label">基础层得分</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val mid" id="rAdvScore">0</div>
+        <div class="metric-label">进阶层得分</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val" style="color:#7c3aed;" id="rInnScore">0</div>
+        <div class="metric-label">创新层得分</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val good" id="rTotalScore">0</div>
+        <div class="metric-label">实操总分</div>
+      </div>
+    </div>
+    <div class="report-form" id="reportForm">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+        <div class="form-group"><label>学生姓名</label><input type="text" id="rName" placeholder="请输入姓名"></div>
+        <div class="form-group"><label>学号</label><input type="text" id="rStudentId" placeholder="请输入学号"></div>
+        <div class="form-group"><label>专业班级</label><input type="text" id="rClass" placeholder="例：人工智能2301班"></div>
+        <div class="form-group"><label>指导教师</label><input type="text" id="rTeacher" placeholder="请输入指导教师姓名"></div>
+      </div>
+      <div class="form-group"><label>实验目的（实验要解决什么问题，达到什么目标）</label><textarea id="rPurpose" rows="3" placeholder="请描述本次实验的目的..."></textarea></div>
+      <div class="form-group"><label>实验原理（简述RAG技术核心原理与运行机制）</label><textarea id="rPrinciple" rows="4" placeholder="请简要描述RAG技术原理..."></textarea></div>
+      <div class="form-group"><label>参数配置记录（记录你在实训中使用的关键参数）</label><textarea id="rParams" rows="4" placeholder="top_k=?, threshold=?, 分块方式=?, 输出格式=?..."></textarea></div>
+      <div class="form-group"><label>效果对比分析（不同参数下的检索准确率、幻觉率对比）</label><textarea id="rAnalysis" rows="4" placeholder="请描述对比实验的结果与分析..."></textarea></div>
+      <div class="form-group"><label>故障排查过程（描述遇到的故障及排查修复过程）</label><textarea id="rFault" rows="3" placeholder="请描述遇到的问题及解决过程..."></textarea></div>
+      <div class="form-group"><label>实验结论与心得体会</label><textarea id="rConclusion" rows="5" placeholder="请总结本次实验的主要结论与收获..."></textarea></div>
+    </div>
+    <div style="margin-top:1.2rem;display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-primary" onclick="submitReport()">提交实验报告</button>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="footer">
+  RAG检索增强生成虚拟仿真实验平台 &nbsp;·&nbsp; 人工智能课程实训中心 &nbsp;·&nbsp; 本平台免登录开放访问，适用于人工智能、软件工程、计算机科学与技术等专业
+</footer>
+
+<script>
+// =================== GLOBAL STATE ===================
+const STATE = {
+  quizPassed: false,
+  basicDone: [false,false,false,false,false,false],
+  advDone: [false,false,false,false,false],
+  innDone: [false,false,false,false,false],
+  basicScore: 0,
+  advScore: 0,
+  innScore: 0,
+  selectedDoc: null,
+  selectedDocs: [],
+  chunkMode: 'paragraph',
+  topK: 3,
+  threshold: 0.7,
+  contextWindow: 3,
+  outputFormat: 'freetext',
+  multiRound: false,
+  qaHistory: [],
+  advQaHistory: [],
+  innQaHistory: [],
+  compareData: [],
+  currentBasicStep: 1,
+  currentAdvStep: 1,
+  currentInnStep: 1,
+  experimentLog: [],
+  faultsSolved: []
+};
+
+// =================== KNOWLEDGE BASE ===================
+const DOCS = {
+  ai_course: {
+    name: '人工智能课程文档',
+    icon: '🤖',
+    desc: '机器学习、深度学习、NLP等课程知识',
+    chunks: [
+      '机器学习是人工智能的核心子领域，通过算法使计算机从数据中自动学习规律，主要分为监督学习、无监督学习和强化学习三大类。',
+      '深度学习基于人工神经网络，通过多层非线性变换提取数据的层次化表示。常见模型包括CNN（卷积神经网络）、RNN（循环神经网络）和Transformer架构。',
+      '自然语言处理（NLP）是让计算机理解和生成人类语言的技术，核心任务包括文本分类、命名实体识别、机器翻译和问答系统。',
+      'Transformer是2017年Google提出的革命性架构，基于自注意力机制，彻底取代了RNN成为NLP领域的主流框架，BERT、GPT等大模型均基于此架构。',
+      'RAG（检索增强生成）通过将外部知识库与大语言模型结合，有效解决模型幻觉、知识滞后问题，广泛应用于企业知识库问答场景。',
+      '向量数据库专门用于存储和检索高维向量，通过近似最近邻（ANN）算法实现高效的语义相似度搜索，主流产品有Faiss、Milvus、Chroma、Qdrant等。',
+      '提示词工程（Prompt Engineering）是通过精心设计输入提示，引导大语言模型生成期望输出的技术，包括角色设定、少样本示例、思维链等策略。',
+      '模型幻觉是指大语言模型生成看似合理但实际上不准确的内容，主要原因是训练数据有限、参数记忆的模糊性以及模型的自回归生成特性。'
+    ]
+  },
+  papers: {
+    name: '专业学术文献',
+    icon: '📚',
+    desc: '计算机视觉、推荐系统等前沿论文',
+    chunks: [
+      'Attention Is All You Need（2017）提出了Transformer架构，核心创新是多头自注意力机制（Multi-Head Self-Attention），计算复杂度为O(n²d)。',
+      'BERT（Bidirectional Encoder Representations from Transformers）采用双向编码器，通过掩码语言模型和下一句预测两项预训练任务，在多项NLP基准上取得SOTA。',
+      'GPT系列模型采用单向自回归架构，GPT-3拥有1750亿参数，展现出强大的少样本学习能力，是当前主流大语言模型的重要先驱。',
+      'RAG论文（Lewis et al., 2020）首次系统性提出检索增强生成框架，将密集向量检索与seq2seq生成模型结合，在开放域问答任务中大幅超越纯生成方法。',
+      '向量检索算法HNSW（Hierarchical Navigable Small World）通过构建多层图结构实现次线性复杂度的近似最近邻搜索，是当前向量数据库中最常用的索引算法。',
+      '大语言模型幻觉分类：事实性幻觉（生成与事实不符的内容）和忠实性幻觉（生成与输入上下文不一致的内容），RAG主要针对前者进行抑制。'
+    ]
+  },
+  campus: {
+    name: '校园制度文档',
+    icon: '🏫',
+    desc: '学籍管理、奖学金、课程选修制度',
+    chunks: [
+      '学生选课规定：每学期选课须在规定时间内通过教务系统完成，选课总学分不得超过28学分，跨专业选修课程需提前获得所在院系批准。',
+      '奖学金评定标准：综合测评成绩排名专业前5%可获国家奖学金（8000元/年），前15%可获国家励志奖学金（5000元/年），综合测评包括学业成绩（60%）、素质拓展（40%）。',
+      '学籍管理规定：学生无故缺课达到总学时1/3者，取消期末考试资格；连续旷课三天以上，由辅导员上报院系记录。',
+      '毕业设计要求：毕业设计答辩需在第8学期3月前完成，论文正文字数不少于15000字，需通过查重系统检测（相似度<30%），并经过两轮导师审阅。',
+      '实验室使用规定：学生进入实验室必须穿实验服，禁止携带食物饮料；仪器使用后需填写使用记录，设备故障须立即报告实验员，不得擅自拆卸。',
+      '创新创业学分认定：参加全国性竞赛获奖可认定2-4学分；发表学术论文（北大核心以上）可认定3学分；获得软件著作权可认定1学分。'
+    ]
+  }
+};
+
+const QUESTIONS = [
+  {
+    q: 'RAG（检索增强生成）技术解决的核心问题是？',
+    opts:['提升模型的运算速度','抑制大语言模型的幻觉问题，提升回答准确性','减少模型的参数量','提高模型的对话流畅度'],
+    ans: 1,
+    explain: 'RAG通过引入外部可信知识库，将检索到的真实信息注入提示词，约束模型生成范围，从根源上抑制幻觉（Hallucination）问题。'
+  },
+  {
+    q: 'RAG系统中，"向量化"操作的主要目的是？',
+    opts:['压缩文件大小','将文本转化为高维数值向量，以便进行语义相似度计算','加密保护文本内容','格式化文本便于展示'],
+    ans: 1,
+    explain: '向量化（Embedding）将文本映射到高维向量空间，使语义相近的文本在向量空间中距离更近，从而实现基于语义的相似度检索。'
+  },
+  {
+    q: '以下哪个参数控制RAG系统每次检索返回的相关文档片段数量？',
+    opts:['temperature（温度）','chunk_size（分块大小）','top_k（召回数量）','max_tokens（最大令牌数）'],
+    ans: 2,
+    explain: 'top_k参数决定语义检索阶段返回与问题最相似的前K个文档片段。top_k过小可能导致信息不全，过大则引入无关信息干扰模型。'
+  },
+  {
+    q: '文本分块（Text Chunking）中，"按段落分块"相比"按固定长度分块"的主要优势是？',
+    opts:['处理速度更快','分块数量更少','更好地保持段落的语义完整性','更节省存储空间'],
+    ans: 2,
+    explain: '按段落分块遵循文档的自然结构，每个分块对应一个完整的语义单元，避免了按固定长度分块时可能将一句话截断在两个分块中间的问题。'
+  },
+  {
+    q: '当RAG系统发生"答非所问"故障时，最可能的原因是？',
+    opts:['LLM模型参数不足','向量数据库存储容量已满','相似度阈值设置过低，检索到了无关的文档片段','文档清洗不彻底'],
+    ans: 2,
+    explain: '相似度阈值过低时，语义相关性较低的文档片段也会被召回，导致LLM参考了错误的上下文信息，生成与问题不符的回答。适当提高阈值或结合top_k调整可解决此问题。'
+  }
+];
+
+// =================== SECTION NAVIGATION ===================
+function showSection(name){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('section'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const map={home:0,prelearn:1,lab:2,report:3};
+  document.querySelectorAll('.nav-btn')[map[name]].classList.add('active');
+  if(name==='lab') initLabSection();
+  if(name==='report') updateReportScores();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// =================== PRELEARN ===================
+let currentQ = 0;
+let quizAnswers = [];
+let quizCorrects = 0;
+
+function switchPrelearnTab(tab){
+  document.getElementById('tabTheory').style.display = tab==='theory'?'':'none';
+  document.getElementById('tabQuiz').style.display = tab==='quiz'?'':'none';
+  document.querySelectorAll('.phase-btn').forEach((b,i)=>b.classList.remove('active'));
+  if(tab==='theory') document.getElementById('theoryPhaseBtn').classList.add('active');
+  else document.getElementById('quizPhaseBtn').classList.add('active');
+  if(tab==='quiz') initQuiz();
+}
+
+function initQuiz(){
+  currentQ = 0; quizAnswers = Array(5).fill(null); quizCorrects = 0;
+  renderQuizProgress();
+  renderQuestion();
+}
+
+function renderQuizProgress(){
+  const dots = document.getElementById('quizProgressDots');
+  dots.innerHTML = QUESTIONS.map((q,i)=>
+    `<div class="quiz-dot ${i<currentQ?'done':i===currentQ?'active':''}"></div>`
+  ).join('');
+}
+
+function renderQuestion(){
+  if(currentQ>=QUESTIONS.length){
+    showQuizResult(); return;
+  }
+  const q = QUESTIONS[currentQ];
+  const area = document.getElementById('quizArea');
+  const labels = ['A','B','C','D'];
+  area.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:.8rem;">
+      <span class="tag tag-blue">第 ${currentQ+1} / ${QUESTIONS.length} 题</span>
+    </div>
+    <div class="quiz-question">${q.q}</div>
+    <div class="quiz-options">
+      ${q.opts.map((opt,i)=>`
+        <div class="quiz-option" id="qopt${i}" onclick="selectAnswer(${i})">
+          <span class="quiz-option-label">${labels[i]}</span>
+          <span>${opt}</span>
+        </div>
+      `).join('')}
+    </div>
+    <div id="quizExplain"></div>
+  `;
+  const actions = document.getElementById('quizActions');
+  actions.innerHTML = `<button class="btn btn-primary" id="confirmBtn" onclick="confirmAnswer()" disabled>确认答案</button>`;
+}
+
+function selectAnswer(idx){
+  if(document.getElementById('quizExplain').innerHTML) return;
+  document.querySelectorAll('.quiz-option').forEach(o=>o.classList.remove('selected'));
+  document.getElementById('qopt'+idx).classList.add('selected');
+  quizAnswers[currentQ] = idx;
+  document.getElementById('confirmBtn').disabled = false;
+}
+
+function confirmAnswer(){
+  const q = QUESTIONS[currentQ];
+  const selected = quizAnswers[currentQ];
+  if(selected===null) return;
+  const isCorrect = selected===q.ans;
+  if(isCorrect) quizCorrects++;
+  document.querySelectorAll('.quiz-option').forEach((o,i)=>{
+    if(i===q.ans) o.classList.add('correct');
+    else if(i===selected&&!isCorrect) o.classList.add('wrong');
+  });
+  document.getElementById('quizExplain').innerHTML = `
+    <div class="quiz-explain ${isCorrect?'correct':'wrong'}">
+      ${isCorrect?'✅ 回答正确！':'❌ 回答错误。'}${q.explain}
+    </div>`;
+  document.getElementById('confirmBtn').disabled = true;
+  const actions = document.getElementById('quizActions');
+  actions.innerHTML = `<button class="btn btn-primary" onclick="nextQuestion()">${currentQ<QUESTIONS.length-1?'下一题 →':'查看结果 →'}</button>`;
+  renderQuizProgress();
+}
+
+function nextQuestion(){
+  currentQ++;
+  renderQuizProgress();
+  renderQuestion();
+}
+
+function showQuizResult(){
+  const passed = quizCorrects===5;
+  STATE.quizPassed = passed;
+  document.getElementById('quizPassBadge').className = 'tag '+(passed?'tag-green':'tag-red');
+  document.getElementById('quizPassBadge').textContent = passed?'✅ 通过':'❌ 未通过';
+  document.getElementById('quizScore').textContent = `${quizCorrects}/5`;
+  document.getElementById('quizArea').innerHTML = `
+    <div style="text-align:center;padding:2rem;">
+      <div style="font-size:52px;margin-bottom:1rem;">${passed?'🎉':'😅'}</div>
+      <h3 style="font-size:18px;font-weight:700;margin-bottom:.5rem;">${passed?'预习自测通过！':'未能通过，请重试'}</h3>
+      <div style="font-size:24px;font-weight:800;color:${passed?'#059669':'#dc2626'};margin:.5rem 0;">${quizCorrects} / 5 题正确</div>
+      <p style="font-size:13px;color:var(--text2);margin-top:.5rem;">${passed?'已解锁实验操作区域，可以开始正式实训了！':'请回顾理论知识后重新作答，5题全对方可进入实训'}</p>
+      ${passed?'<button class="btn btn-success" style="margin-top:1rem;" onclick="showSection(\'lab\')">进入实验操作 →</button>':
+      '<button class="btn btn-outline" style="margin-top:1rem;" onclick="initQuiz()">重新作答</button>'}
+    </div>`;
+  document.getElementById('quizActions').innerHTML='';
+  if(passed) showToast('🎉 预习自测通过！已解锁实验操作区域','success');
+  updateProgress();
+}
+
+// =================== LAB SECTION ===================
+function initLabSection(){
+  if(!STATE.quizPassed){
+    document.getElementById('labLockedMsg').style.display='';
+    document.getElementById('labContent').style.display='none';
+  } else {
+    document.getElementById('labLockedMsg').style.display='none';
+    document.getElementById('labContent').style.display='';
+    renderBasicStep(STATE.currentBasicStep);
+    checkAdvLock();
+    checkInnLock();
+  }
+}
+
+function switchLabTab(tab){
+  ['basic','advanced','innovation'].forEach(t=>{
+    document.getElementById('lab'+t.charAt(0).toUpperCase()+t.slice(1)).style.display=t===tab?'':'none';
+  });
+  document.querySelectorAll('.section-tab').forEach((b,i)=>{
+    b.classList.toggle('active',['basic','advanced','innovation'][i]===tab);
+  });
+  if(tab==='advanced') checkAdvLock();
+  if(tab==='innovation') checkInnLock();
+}
+
+function checkAdvLock(){
+  const allBasicDone = STATE.basicDone.every(v=>v);
+  document.getElementById('advLockedMsg').style.display = allBasicDone?'none':'';
+  document.getElementById('advContent').style.display = allBasicDone?'':'none';
+  if(allBasicDone) renderAdvStep(STATE.currentAdvStep);
+}
+
+function checkInnLock(){
+  const allAdvDone = STATE.advDone.every(v=>v);
+  document.getElementById('innLockedMsg').style.display = allAdvDone?'none':'';
+  document.getElementById('innContent').style.display = allAdvDone?'':'none';
+  if(allAdvDone) renderInnStep(STATE.currentInnStep);
+}
+
+// =================== BASIC STEPS ===================
+function activateBasicStep(n){
+  const maxUnlocked = STATE.basicDone.filter(v=>v).length + 1;
+  if(n > maxUnlocked) { showToast('请先完成上一步骤','warn'); return; }
+  STATE.currentBasicStep = n;
+  renderBasicStep(n);
+}
+
+function renderBasicStep(n){
+  updateStepFlow('basicStepFlow', STATE.basicDone, n, 6);
+  const panel = document.getElementById('basicOpPanel');
+  switch(n){
+    case 1: panel.innerHTML = renderDocSelector(false); break;
+    case 2: panel.innerHTML = renderCleanPanel(); break;
+    case 3: panel.innerHTML = renderChunkPanel(); break;
+    case 4: panel.innerHTML = renderVectorPanel(); break;
+    case 5: panel.innerHTML = renderParamInitPanel(); break;
+    case 6: panel.innerHTML = renderQAPanel('basic'); break;
+  }
+}
+
+function renderDocSelector(multi){
+  return `
+  <div class="op-panel">
+    <div class="op-header">
+      <span style="font-size:13px;font-weight:600;">📄 步骤1：选择实验文档</span>
+      <span class="tag tag-blue">+5分</span>
+    </div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">从内置文档库中选择一套作为本次实验的知识库素材。不同类型的文档覆盖不同业务场景，影响后续检索效果。</p>
+      <div class="doc-cards">
+        ${Object.entries(DOCS).map(([k,d])=>`
+          <div class="doc-card ${STATE.selectedDoc===k?'selected':''}" id="docCard_${k}" onclick="selectDoc('${k}',false)">
+            <div class="doc-card-check">✓</div>
+            <div class="doc-card-icon">${d.icon}</div>
+            <div class="doc-card-name">${d.name}</div>
+            <div class="doc-card-desc">${d.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="margin-top:1rem;padding:.8rem 1rem;background:#f8faff;border-radius:8px;font-size:12px;color:var(--text2);" id="docInfo">
+        ${STATE.selectedDoc ? `已选择：<strong>${DOCS[STATE.selectedDoc].name}</strong> — 共包含 <strong>${DOCS[STATE.selectedDoc].chunks.length}</strong> 个语义片段` : '请点击选择一套文档'}
+      </div>
+      <div style="margin-top:1rem;text-align:right;">
+        <button class="btn btn-primary" onclick="completeBasicStep(1)" ${!STATE.selectedDoc?'disabled':''} id="step1Btn">确认选择，完成步骤1</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function selectDoc(key, multi){
+  STATE.selectedDoc = key;
+  document.querySelectorAll('.doc-card').forEach((c,i)=>{
+    const k = Object.keys(DOCS)[i];
+    c.classList.toggle('selected', k===key);
+  });
+  const docInfo = document.getElementById('docInfo');
+  if(docInfo) docInfo.innerHTML = `已选择：<strong>${DOCS[key].name}</strong> — 共包含 <strong>${DOCS[key].chunks.length}</strong> 个语义片段`;
+  const btn = document.getElementById('step1Btn');
+  if(btn) btn.disabled = false;
+}
+
+function renderCleanPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header">
+      <span style="font-size:13px;font-weight:600;">🧹 步骤2：文档清洗预处理</span>
+      <span class="tag tag-blue">+5分</span>
+    </div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">模拟真实数据清洗过程，自动完成去重、格式统一、无效字符过滤等操作。数据质量是RAG效果的基础保障。</p>
+      <div style="background:#f8faff;border-radius:10px;padding:1rem;border:1px solid var(--border);margin-bottom:1rem;">
+        <div style="font-size:12px;font-weight:600;margin-bottom:.8rem;">待处理文档：<strong>${STATE.selectedDoc?DOCS[STATE.selectedDoc].name:'未选择'}</strong></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;" id="cleanSteps">
+          ${['检测重复片段','格式标准化','移除HTML标签','过滤特殊字符','统一编码格式','段落边界识别'].map((s,i)=>`
+            <div style="display:flex;align-items:center;gap:6px;padding:.4rem .6rem;border-radius:6px;background:#fff;border:1px solid var(--border);font-size:12px;" id="cs${i}">
+              <span style="width:16px;height:16px;border-radius:50%;background:#f1f5f9;display:flex;align-items:center;justify-content:center;font-size:9px;">⏳</span>
+              ${s}
+            </div>`).join('')}
+        </div>
+        <div class="progress-ring" style="margin-top:.8rem;"><div class="progress-fill" id="cleanProg" style="width:0%"></div></div>
+        <div id="cleanResult" style="display:none;margin-top:.8rem;padding:.6rem .8rem;background:#f0fdf4;border-radius:8px;font-size:12px;color:#15803d;border:1px solid #bbf7d0;">
+          ✅ 清洗完成！已移除 <strong>0</strong> 条重复片段，格式统一化处理 <strong>${STATE.selectedDoc?DOCS[STATE.selectedDoc].chunks.length:6}</strong> 个片段
+        </div>
+      </div>
+      <div style="text-align:right;display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline btn-sm" onclick="runCleaning()">▶ 执行清洗</button>
+        <button class="btn btn-primary" id="step2Btn" onclick="completeBasicStep(2)" disabled>确认完成，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function runCleaning(){
+  let i=0;
+  const steps = document.querySelectorAll('[id^=cs]');
+  const prog = document.getElementById('cleanProg');
+  const interval = setInterval(()=>{
+    if(i>=steps.length){
+      clearInterval(interval);
+      document.getElementById('cleanResult').style.display='';
+      document.getElementById('step2Btn').disabled=false;
+      return;
+    }
+    steps[i].querySelector('span').style.background='#dcfce7';
+    steps[i].querySelector('span').style.color='#15803d';
+    steps[i].querySelector('span').textContent='✓';
+    prog.style.width = ((i+1)/steps.length*100)+'%';
+    i++;
+  },300);
+}
+
+function renderChunkPanel(){
+  const doc = STATE.selectedDoc?DOCS[STATE.selectedDoc]:DOCS.ai_course;
+  return `
+  <div class="op-panel">
+    <div class="op-header">
+      <span style="font-size:13px;font-weight:600;">✂️ 步骤3：文本分块配置</span>
+      <span class="tag tag-blue">+5分</span>
+    </div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">选择文本分块策略，不同策略影响检索精度与语义完整性。</p>
+      <div class="ctrl-row">
+        <span class="ctrl-label">分块策略</span>
+        <div class="toggle-group">
+          <button class="toggle-btn ${STATE.chunkMode==='paragraph'?'active':''}" onclick="setChunkMode('paragraph')">按段落分块</button>
+          <button class="toggle-btn ${STATE.chunkMode==='fixed'?'active':''}" onclick="setChunkMode('fixed')">固定长度分块</button>
+        </div>
+      </div>
+      <div id="chunkPreview" style="margin-top:1rem;"></div>
+      <div style="text-align:right;margin-top:1rem;">
+        <button class="btn btn-primary" onclick="completeBasicStep(3)">确认分块方案，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function setChunkMode(mode){
+  STATE.chunkMode = mode;
+  document.querySelectorAll('.toggle-btn').forEach((b,i)=>{
+    b.classList.toggle('active',['paragraph','fixed'][i]===mode);
+  });
+  renderChunkPreview();
+}
+
+function renderChunkPreview(){
+  const doc = STATE.selectedDoc?DOCS[STATE.selectedDoc]:DOCS.ai_course;
+  const preview = document.getElementById('chunkPreview');
+  if(!preview) return;
+  const chunks = STATE.chunkMode==='paragraph' ? doc.chunks : doc.chunks.map(c=>c.substring(0,80)+'...');
+  preview.innerHTML = `
+    <div style="background:#f8faff;border-radius:10px;padding:1rem;border:1px solid var(--border);">
+      <div style="font-size:12px;font-weight:600;margin-bottom:.8rem;color:var(--text2);">
+        分块预览 — <span style="color:var(--primary-light);">${STATE.chunkMode==='paragraph'?'按段落':'固定长度'}</span> 模式 · 共 ${chunks.length} 个片段
+      </div>
+      ${chunks.slice(0,3).map((c,i)=>`
+        <div style="margin-bottom:.6rem;padding:.6rem .8rem;background:#fff;border-radius:7px;border:1px solid var(--border);">
+          <span style="font-size:10px;color:var(--text3);font-weight:600;">片段 #${i+1}</span>
+          <p style="font-size:12px;color:var(--text2);margin-top:3px;line-height:1.6;">${c}</p>
+        </div>
+      `).join('')}
+      ${chunks.length>3?`<div style="text-align:center;font-size:12px;color:var(--text3);padding:.3rem;">... 还有 ${chunks.length-3} 个片段</div>`:''}
+    </div>
+    <div style="margin-top:.8rem;padding:.6rem 1rem;border-radius:8px;font-size:12px;background:${STATE.chunkMode==='paragraph'?'#f0fdf4':'#fff7ed'};color:${STATE.chunkMode==='paragraph'?'#166534':'#92400e'};">
+      ${STATE.chunkMode==='paragraph'?'✅ 按段落分块：保持语义完整性，适合结构化文档，推荐用于学术文献和课程内容':'⚠️ 固定长度分块：可能截断句子，适合均匀分布的文档，检索精度略低于段落分块'}
+    </div>`;
+}
+
+function renderVectorPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header">
+      <span style="font-size:13px;font-weight:600;">📐 步骤4：向量入库操作</span>
+      <span class="tag tag-blue">+5分</span>
+    </div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">通过嵌入模型将文本块转化为高维向量，存入向量数据库。这是实现语义检索的核心步骤。</p>
+      <div class="anim-panel">
+        <div class="anim-pipeline">
+          <div class="pipe-step">
+            <div class="pipe-box" id="pipe1">📄</div>
+            <div class="pipe-label">文本片段</div>
+          </div>
+          <div class="pipe-arrow" style="margin-top:-12px;">→</div>
+          <div class="pipe-step">
+            <div class="pipe-box" id="pipe2">🤖</div>
+            <div class="pipe-label">嵌入模型</div>
+          </div>
+          <div class="pipe-arrow" style="margin-top:-12px;">→</div>
+          <div class="pipe-step">
+            <div class="pipe-box" id="pipe3">📊</div>
+            <div class="pipe-label">高维向量</div>
+          </div>
+          <div class="pipe-arrow" style="margin-top:-12px;">→</div>
+          <div class="pipe-step">
+            <div class="pipe-box" id="pipe4">🗄️</div>
+            <div class="pipe-label">向量数据库</div>
+          </div>
+        </div>
+        <div class="progress-ring"><div class="progress-fill" id="vecProg" style="width:0%"></div></div>
+        <div id="vecStatus" style="font-size:12px;color:var(--text2);text-align:center;">点击按钮开始向量化入库</div>
+      </div>
+      <div id="vecResult" style="display:none;margin-top:1rem;">
+        <div class="metrics-row">
+          <div class="metric-card"><div class="metric-val good">${STATE.selectedDoc?DOCS[STATE.selectedDoc].chunks.length:6}</div><div class="metric-label">文本片段数</div></div>
+          <div class="metric-card"><div class="metric-val good">768</div><div class="metric-label">向量维度</div></div>
+          <div class="metric-card"><div class="metric-val good">HNSW</div><div class="metric-label">索引类型</div></div>
+          <div class="metric-card"><div class="metric-val good" style="font-size:16px;">向量库</div><div class="metric-label">存储完成</div></div>
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:1rem;display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline btn-sm" onclick="runVectorize()">▶ 开始向量化入库</button>
+        <button class="btn btn-primary" id="step4Btn" onclick="completeBasicStep(4)" disabled>确认入库，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function runVectorize(){
+  const chunks = STATE.selectedDoc?DOCS[STATE.selectedDoc].chunks:DOCS.ai_course.chunks;
+  let p=0;
+  const pipeIds=['pipe1','pipe2','pipe3','pipe4'];
+  const statusEl = document.getElementById('vecStatus');
+  const progEl = document.getElementById('vecProg');
+  const messages = ['正在读取文本片段...','调用嵌入模型 (text-embedding-ada-002)...','生成768维向量表示...','存入向量数据库 (HNSW索引)...','索引构建完成！'];
+  let step=0;
+  const interval = setInterval(()=>{
+    if(step<4){
+      pipeIds.forEach((id,i)=>{ const el=document.getElementById(id); if(el){el.classList.toggle('active',i===step);el.classList.toggle('done',i<step);} });
+      if(statusEl) statusEl.textContent = messages[step];
+      p = (step+1)/4*100;
+      if(progEl) progEl.style.width=p+'%';
+      step++;
+    } else {
+      clearInterval(interval);
+      pipeIds.forEach(id=>{ const el=document.getElementById(id); if(el){el.classList.remove('active');el.classList.add('done');} });
+      if(statusEl) statusEl.textContent = messages[4];
+      const res=document.getElementById('vecResult');
+      if(res) res.style.display='';
+      const btn=document.getElementById('step4Btn');
+      if(btn) btn.disabled=false;
+      showToast('✅ 向量入库完成！'+chunks.length+'个片段已索引','success');
+    }
+  },500);
+}
+
+function renderParamInitPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header">
+      <span style="font-size:13px;font-weight:600;">⚙️ 步骤5：参数初始化</span>
+      <span class="tag tag-blue">+5分</span>
+    </div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">了解RAG系统核心参数的默认配置与含义。基础层参数已预设最优默认值，进阶层可自行调整。</p>
+      <div style="display:flex;flex-direction:column;gap:.8rem;">
+        <div style="padding:1rem;border-radius:10px;background:#f8faff;border:1px solid #c7d2fe;">
+          <div class="ctrl-row" style="margin-bottom:.3rem;">
+            <span class="ctrl-label">top_k（召回数量）</span>
+            <span style="font-size:13px;font-weight:700;color:var(--primary-light);">3</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:8px;">（固定，进阶层可调整）</span>
+          </div>
+          <p style="font-size:11px;color:var(--text2);">每次检索返回与问题最相似的3个文档片段，作为LLM生成的参考上下文</p>
+        </div>
+        <div style="padding:1rem;border-radius:10px;background:#f8faff;border:1px solid #c7d2fe;">
+          <div class="ctrl-row" style="margin-bottom:.3rem;">
+            <span class="ctrl-label">相似度阈值</span>
+            <span style="font-size:13px;font-weight:700;color:var(--primary-light);">0.7</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:8px;">（固定，进阶层可调整）</span>
+          </div>
+          <p style="font-size:11px;color:var(--text2);">只有相似度≥0.7的片段才会被召回，过滤低相关性内容</p>
+        </div>
+        <div style="padding:1rem;border-radius:10px;background:#f8faff;border:1px solid #c7d2fe;">
+          <div class="ctrl-row" style="margin-bottom:.3rem;">
+            <span class="ctrl-label">输出格式</span>
+            <span style="font-size:13px;font-weight:700;color:var(--primary-light);">自由文本</span>
+          </div>
+          <p style="font-size:11px;color:var(--text2);">自然语言段落形式输出，易于阅读理解</p>
+        </div>
+        <div style="padding:1rem;border-radius:10px;background:#fef3c7;border:1px solid #fde68a;">
+          <div style="font-size:12px;font-weight:600;color:#92400e;">💡 参数调优建议（进阶层开放）</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:.3rem;">top_k建议范围：1-8；相似度阈值建议范围：0.4-0.9。参数过高或过低均会影响检索效果，进阶层将引导你探索最优配置。</div>
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:1rem;">
+        <button class="btn btn-primary" onclick="completeBasicStep(5)">了解参数，完成步骤5</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderQAPanel(layer){
+  const docName = STATE.selectedDoc?DOCS[STATE.selectedDoc].name:'知识库';
+  const sampleQs = layer==='basic'?[
+    `RAG技术的核心原理是什么？`,
+    `什么是向量数据库？`,
+    `文本分块有哪些策略？`
+  ]: layer==='advanced'?[
+    `请解释一下top_k参数的作用`,
+    `如何选择合适的相似度阈值？`,
+    `提示词工程有哪些常见策略？`
+  ]:[
+    `比较不同文本分块策略的优缺点`,
+    `RAG系统故障排查的一般步骤是什么？`,
+    `如何在多文档场景下提升检索准确率？`
+  ];
+  const histKey = layer==='basic'?'qaHistory':layer==='advanced'?'advQaHistory':'innQaHistory';
+  const histHTML = STATE[histKey].map(m=>`
+    <div class="qa-msg ${m.role}" style="align-self:${m.role==='user'?'flex-end':'flex-start'};">${m.content}</div>
+  `).join('');
+
+  return `
+  <div class="op-panel">
+    <div class="op-header">
+      <span style="font-size:13px;font-weight:600;">${layer==='basic'?'💬 步骤6：基础问答测试':layer==='advanced'?'💬 问答测试（进阶参数）':'💬 高级问答测试'}</span>
+      <span class="tag ${layer==='basic'?'tag-blue':layer==='advanced'?'tag-green':'tag-purple'}">${layer==='basic'?'+5分':'+4分'}</span>
+    </div>
+    <div class="op-body">
+      <div style="margin-bottom:.8rem;display:flex;flex-wrap:wrap;gap:6px;">
+        ${sampleQs.map(q=>`<span style="padding:4px 10px;border-radius:12px;font-size:11px;cursor:pointer;background:#f0f4ff;border:1px solid #c7d2fe;color:var(--primary-light);" onclick="fillQA('${q}','${layer}')">${q}</span>`).join('')}
+      </div>
+      <div class="qa-messages" id="qaMessages_${layer}">${histHTML||'<div style="text-align:center;font-size:12px;color:var(--text3);padding:1.5rem;">在下方输入问题，开始测试RAG系统</div>'}</div>
+      <div class="qa-input-row" style="margin-top:.8rem;">
+        <input class="qa-input" id="qaInput_${layer}" placeholder="输入问题，基于${docName}检索回答..." onkeydown="if(event.key==='Enter')sendQA('${layer}')">
+        <button class="btn btn-primary" onclick="sendQA('${layer}')">发送</button>
+      </div>
+      ${layer==='basic'?`<div style="margin-top:.8rem;text-align:right;"><button class="btn btn-success" onclick="completeBasicStep(6)">完成问答测试，提交基础层</button></div>`:''}
+    </div>
+  </div>`;
+}
+
+function fillQA(text, layer){
+  const input = document.getElementById('qaInput_'+layer);
+  if(input) input.value = text;
+}
+
+function sendQA(layer){
+  const input = document.getElementById('qaInput_'+layer);
+  if(!input||!input.value.trim()) return;
+  const question = input.value.trim();
+  input.value='';
+  const histKey = layer==='basic'?'qaHistory':layer==='advanced'?'advQaHistory':'innQaHistory';
+  STATE[histKey].push({role:'user',content:question});
+  const {answer, sources} = ragQuery(question, layer);
+  setTimeout(()=>{
+    STATE[histKey].push({role:'assistant',content:answer});
+    const msgs = document.getElementById('qaMessages_'+layer);
+    if(msgs){
+      msgs.innerHTML = STATE[histKey].map(m=>`
+        <div class="qa-msg ${m.role}">${m.content}</div>
+      `).join('');
+      if(sources.length>0){
+        msgs.innerHTML += `
+          <div class="retrieval-context">
+            <h5>检索到的相关片段（top_k=${STATE.topK}，阈值=${STATE.threshold}）</h5>
+            ${sources.map((s,i)=>`<div class="retrieval-item">片段#${i+1}：${s}</div>`).join('')}
+          </div>`;
+      }
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+  },600);
+
+  const msgs = document.getElementById('qaMessages_'+layer);
+  if(msgs){
+    msgs.innerHTML += `<div class="qa-msg user">${question}</div>`;
+    msgs.innerHTML += `<div class="qa-msg assistant" style="font-style:italic;opacity:.6;">正在检索知识库...</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+  STATE.experimentLog.push({time:new Date().toLocaleTimeString(),action:'问答',layer,question,topK:STATE.topK,threshold:STATE.threshold});
+}
+
+function ragQuery(question, layer){
+  const docs = STATE.selectedDocs.length>0 ? STATE.selectedDocs : (STATE.selectedDoc?[STATE.selectedDoc]:['ai_course']);
+  let allChunks = [];
+  docs.forEach(docKey=>{ if(DOCS[docKey]) allChunks = allChunks.concat(DOCS[docKey].chunks.map(c=>({text:c,src:docKey}))); });
+  
+  // simulate semantic similarity
+  const qWords = question.replace(/[？。，、！]/g,'').split('');
+  const scored = allChunks.map(chunk=>{
+    const text = chunk.text;
+    let score = 0;
+    qWords.forEach(w=>{ if(text.includes(w)) score++; });
+    score = score/Math.max(qWords.length,1);
+    return {text:chunk.text,score,src:chunk.src};
+  });
+  scored.sort((a,b)=>b.score-a.score);
+  const threshold = STATE.threshold;
+  const topK = STATE.topK;
+  const relevant = scored.slice(0,topK).filter(s=>s.score>=threshold*0.2);
+  
+  // simulate output format
+  let answer;
+  if(relevant.length===0){
+    answer = `抱歉，在当前知识库中未找到与「${question}」相关的内容。建议：①降低相似度阈值 ②尝试更换关键词 ③选择其他文档库`;
+  } else {
+    const ctx = relevant.map(r=>r.text).join('；');
+    if(STATE.outputFormat==='bullet'){
+      const points = relevant.map((r,i)=>`• ${r.text.substring(0,60)}...`).join('\n');
+      answer = `根据知识库检索结果，以下是关于「${question}」的要点：\n${points}`;
+    } else if(STATE.outputFormat==='json'){
+      answer = `{"question":"${question}","answer_points":${JSON.stringify(relevant.map(r=>r.text.substring(0,50)+'...'))},"confidence":${(relevant[0].score*2).toFixed(2)},"sources":${JSON.stringify([...new Set(relevant.map(r=>DOCS[r.src]?.name||r.src))])}}`;
+    } else if(STATE.outputFormat==='table'){
+      answer = `| 序号 | 相关内容摘要 | 来源文档 |\n|------|------------|--------|\n${relevant.map((r,i)=>`|${i+1}|${r.text.substring(0,40)}...|${DOCS[r.src]?.name||r.src}|`).join('\n')}`;
+    } else {
+      answer = `基于知识库中检索到的 ${relevant.length} 条相关信息，针对「${question}」的回答如下：\n\n${relevant[0].text}\n\n${relevant.length>1?'补充信息：'+relevant.slice(1).map(r=>r.text.substring(0,60)+'...').join('；'):''}`;
+    }
+  }
+  return {answer, sources: relevant.map(r=>r.text)};
+}
+
+function completeBasicStep(n){
+  if(n===1 && !STATE.selectedDoc){ showToast('请先选择文档','warn'); return; }
+  STATE.basicDone[n-1] = true;
+  STATE.basicScore = STATE.basicDone.filter(v=>v).length*5;
+  updateStepFlow('basicStepFlow', STATE.basicDone, Math.min(n+1,6), 6);
+  document.getElementById('basicScore').textContent = STATE.basicScore+'/30分';
+  updateTotalScore();
+  showScorePopup(5, n===6?'基础层实训全部完成！':'步骤'+n+'完成');
+  if(n<6){
+    STATE.currentBasicStep = n+1;
+    renderBasicStep(n+1);
+  } else {
+    showToast('🎉 基础层全部完成！获得30分','success');
+    setTimeout(()=>{ switchLabTab('advanced'); checkAdvLock(); },1000);
+  }
+}
+
+// =================== ADVANCED STEPS ===================
+function activateAdvStep(n){
+  const maxUnlocked = STATE.advDone.filter(v=>v).length + 1;
+  if(n > maxUnlocked) { showToast('请先完成上一步骤','warn'); return; }
+  STATE.currentAdvStep = n;
+  renderAdvStep(n);
+}
+
+function renderAdvStep(n){
+  updateStepFlow('advStepFlow', STATE.advDone, n, 5);
+  const panel = document.getElementById('advOpPanel');
+  switch(n){
+    case 1: panel.innerHTML = renderAdvParam(); break;
+    case 2: panel.innerHTML = renderContextPanel(); break;
+    case 3: panel.innerHTML = renderFormatPanel(); break;
+    case 4: panel.innerHTML = renderComparePanel(); break;
+    case 5: panel.innerHTML = renderAnomalyPanel(); break;
+  }
+}
+
+function renderAdvParam(){
+  return `
+  <div class="op-panel">
+    <div class="op-header">
+      <span style="font-size:13px;font-weight:600;">🔧 步骤1：检索参数调优</span>
+      <span class="tag tag-green">+4分</span>
+    </div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">通过滑块自主调整检索参数，观察不同配置对检索效果的影响，培养参数调优直觉。</p>
+      <div style="padding:1rem;background:#f8faff;border-radius:10px;border:1px solid var(--border);">
+        <div class="ctrl-row">
+          <span class="ctrl-label">召回数量 top_k</span>
+          <input type="range" min="1" max="8" value="${STATE.topK}" oninput="STATE.topK=+this.value;document.getElementById('topkVal').textContent=this.value;updateParamEffect();">
+          <span class="ctrl-value" id="topkVal">${STATE.topK}</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">相似度阈值</span>
+          <input type="range" min="4" max="9" step="1" value="${Math.round(STATE.threshold*10)}" oninput="STATE.threshold=this.value/10;document.getElementById('threshVal').textContent='0.'+this.value;updateParamEffect();">
+          <span class="ctrl-value" id="threshVal">${STATE.threshold}</span>
+        </div>
+      </div>
+      <div id="paramEffect" style="margin-top:1rem;"></div>
+      <div id="advQAArea" style="margin-top:1rem;">${renderQAPanel('advanced').replace(/<div class="op-panel">[\s\S]*?<\/div>\s*<div class="op-body">/,'').replace(/<\/div>\s*<\/div>$/, '')}</div>
+      <div style="text-align:right;margin-top:1rem;">
+        <button class="btn btn-primary" onclick="completeAdvStep(1)">完成调优，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function updateParamEffect(){
+  const el = document.getElementById('paramEffect');
+  if(!el) return;
+  const k = STATE.topK, t = STATE.threshold;
+  let tips = [];
+  if(k>=6) tips.push({type:'warn',msg:`top_k=${k} 较高，可能引入不相关片段，增加幻觉风险`});
+  else if(k<=2) tips.push({type:'warn',msg:`top_k=${k} 较低，可能遗漏重要信息，回答不完整`});
+  else tips.push({type:'good',msg:`top_k=${k} 配置合理，平衡了召回率与精准度`});
+  if(t>=0.85) tips.push({type:'warn',msg:`阈值=${t} 过高，可能导致大量问题检索不到结果（检索失效）`});
+  else if(t<=0.5) tips.push({type:'warn',msg:`阈值=${t} 过低，低相关性片段会被召回，影响回答准确性`});
+  else tips.push({type:'good',msg:`阈值=${t} 适中，能有效过滤低质量检索结果`});
+  el.innerHTML = tips.map(t=>`
+    <div style="padding:.6rem .9rem;border-radius:8px;font-size:12px;margin-bottom:.4rem;background:${t.type==='good'?'#f0fdf4':'#fffbeb'};color:${t.type==='good'?'#15803d':'#92400e'};border:1px solid ${t.type==='good'?'#bbf7d0':'#fde68a'};">
+      ${t.type==='good'?'✅':'⚠️'} ${t.msg}
+    </div>`).join('');
+}
+
+function renderContextPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header"><span style="font-size:13px;font-weight:600;">💬 步骤2：上下文窗口配置</span><span class="tag tag-green">+4分</span></div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">配置多轮对话记忆功能，观察上下文窗口长度对多轮问答连贯性的影响。</p>
+      <div style="padding:1rem;background:#f8faff;border-radius:10px;border:1px solid var(--border);margin-bottom:1rem;">
+        <div class="ctrl-row">
+          <span class="ctrl-label">多轮记忆</span>
+          <div class="toggle-group">
+            <button class="toggle-btn ${STATE.multiRound?'active':''}" onclick="STATE.multiRound=true;this.classList.add('active');this.nextElementSibling.classList.remove('active');showCtxEffect();">开启</button>
+            <button class="toggle-btn ${!STATE.multiRound?'active':''}" onclick="STATE.multiRound=false;this.classList.add('active');this.previousElementSibling.classList.remove('active');showCtxEffect();">关闭</button>
+          </div>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">上下文轮数</span>
+          <input type="range" min="1" max="6" value="${STATE.contextWindow}" oninput="STATE.contextWindow=+this.value;document.getElementById('ctxVal').textContent=this.value+'轮';">
+          <span class="ctrl-value" id="ctxVal">${STATE.contextWindow}轮</span>
+        </div>
+      </div>
+      <div id="ctxEffect" style="padding:.8rem 1rem;border-radius:8px;background:#f0f9ff;font-size:12px;color:#0369a1;border:1px solid #bae6fd;">
+        💡 ${STATE.multiRound?'多轮对话记忆已开启，系统将保留最近'+STATE.contextWindow+'轮对话历史作为上下文，支持连续追问':
+        '多轮对话记忆已关闭，每次提问独立处理，不保留对话历史'}
+      </div>
+      <div style="text-align:right;margin-top:1rem;">
+        <button class="btn btn-primary" onclick="completeAdvStep(2)">配置完成，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function showCtxEffect(){
+  const el = document.getElementById('ctxEffect');
+  if(el) el.innerHTML = '💡 '+(STATE.multiRound?'多轮对话记忆已开启，系统将保留最近'+STATE.contextWindow+'轮对话历史作为上下文，支持连续追问':
+  '多轮对话记忆已关闭，每次提问独立处理，不保留对话历史');
+}
+
+function renderFormatPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header"><span style="font-size:13px;font-weight:600;">📋 步骤3：输出格式优化</span><span class="tag tag-green">+4分</span></div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">选择不同输出格式，对比回答的规范性与可读性，理解提示词工程对输出效果的影响。</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem;">
+        ${[['freetext','自由文本','自然段落形式，易读性强','📄'],['bullet','要点罗列','条目化清晰，便于快速浏览','📋'],['json','JSON格式','结构化可解析，适合程序调用','{}'],['table','表格输出','直观对比，适合多维度信息','📊']].map(([val,name,desc,icon])=>`
+          <div style="padding:.8rem;border-radius:9px;border:2px solid ${STATE.outputFormat===val?'var(--primary-light)':'var(--border)'};cursor:pointer;background:${STATE.outputFormat===val?'#eef3ff':'#fff'};transition:all .2s;" onclick="setFormat('${val}',this)">
+            <div style="font-size:18px;margin-bottom:.3rem;">${icon}</div>
+            <div style="font-size:13px;font-weight:600;">${name}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;">${desc}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div style="text-align:right;">
+        <button class="btn btn-primary" onclick="completeAdvStep(3)">完成格式选择，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function setFormat(val, el){
+  STATE.outputFormat = val;
+  document.querySelectorAll('#labAdvanced [onclick^="setFormat"]').forEach(e=>{
+    e.style.borderColor='var(--border)';e.style.background='#fff';
+  });
+  el.style.borderColor='var(--primary-light)';el.style.background='#eef3ff';
+}
+
+function renderComparePanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header"><span style="font-size:13px;font-weight:600;">⚖️ 步骤4：对比实验设计</span><span class="tag tag-green">+4分</span></div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">设置两组不同参数配置，对同一问题进行测试，对比检索准确率与幻觉率差异。</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+        <div style="padding:1rem;border-radius:10px;border:2px solid #3b82f6;background:#eff6ff;">
+          <div style="font-size:12px;font-weight:600;color:#1d4ed8;margin-bottom:.6rem;">实验组 A（保守配置）</div>
+          <div style="font-size:12px;color:var(--text2);">top_k = 2 &nbsp;|&nbsp; 阈值 = 0.8</div>
+          <div id="metricA" style="margin-top:.6rem;font-size:12px;color:#1d4ed8;font-weight:600;"></div>
+        </div>
+        <div style="padding:1rem;border-radius:10px;border:2px solid #8b5cf6;background:#f5f3ff;">
+          <div style="font-size:12px;font-weight:600;color:#4c1d95;margin-bottom:.6rem;">实验组 B（激进配置）</div>
+          <div style="font-size:12px;color:var(--text2);">top_k = 6 &nbsp;|&nbsp; 阈值 = 0.5</div>
+          <div id="metricB" style="margin-top:.6rem;font-size:12px;color:#4c1d95;font-weight:600;"></div>
+        </div>
+      </div>
+      <input class="qa-input" id="compareQ" placeholder="输入测试问题，系统将用两组配置分别回答..." style="width:100%;margin-bottom:.8rem;">
+      <div id="compareResult" style="display:none;"></div>
+      <div style="text-align:right;display:flex;gap:8px;justify-content:flex-end;">
+        <button class="btn btn-outline btn-sm" onclick="runCompare()">▶ 运行对比实验</button>
+        <button class="btn btn-primary" id="step4AdvBtn" onclick="completeAdvStep(4)" disabled>完成对比，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function runCompare(){
+  const q = document.getElementById('compareQ').value.trim()||'RAG技术的核心原理是什么？';
+  const origTopK = STATE.topK, origThresh = STATE.threshold;
+  STATE.topK=2; STATE.threshold=0.8;
+  const resA = ragQuery(q,'advanced');
+  STATE.topK=6; STATE.threshold=0.5;
+  const resB = ragQuery(q,'advanced');
+  STATE.topK=origTopK; STATE.threshold=origThresh;
+  const accA = Math.round(72+Math.random()*10), accB = Math.round(79+Math.random()*10);
+  const halA = Math.round(8+Math.random()*7), halB = Math.round(12+Math.random()*10);
+  document.getElementById('metricA').textContent = `检索准确率：${accA}% | 幻觉率：${halA}%`;
+  document.getElementById('metricB').textContent = `检索准确率：${accB}% | 幻觉率：${halB}%`;
+  document.getElementById('compareResult').style.display='';
+  document.getElementById('compareResult').innerHTML = `
+    <table class="compare-table">
+      <thead><tr><th>指标</th><th>组A（保守）top_k=2,阈值=0.8</th><th>组B（激进）top_k=6,阈值=0.5</th></tr></thead>
+      <tbody>
+        <tr><td>检索准确率</td><td style="color:${accA>accB?'#15803d':'var(--text)'};">${accA}%${accA>accB?' ↑':''}</td><td style="color:${accB>=accA?'#15803d':'var(--text)'};">${accB}%${accB>accA?' ↑':''}</td></tr>
+        <tr><td>幻觉率</td><td style="color:${halA<halB?'#15803d':'#b91c1c'};">${halA}%${halA<halB?' ↓':''}</td><td style="color:${halB<=halA?'#15803d':'#b91c1c'};">${halB}%${halB<halA?' ↓':''}</td></tr>
+        <tr><td>召回片段数</td><td>2个</td><td>6个</td></tr>
+        <tr><td>回答问题</td><td colspan="2">${q}</td></tr>
+      </tbody>
+    </table>
+    <div style="padding:.7rem 1rem;border-radius:8px;background:#fefce8;border:1px solid #fde68a;font-size:12px;color:#92400e;margin-top:.6rem;">
+      ⚠️ 分析：阈值过低（组B）虽召回更多片段，但引入噪声使幻觉率升高；阈值过高（组A）可能遗漏信息。最佳配置需根据业务场景在准确率与召回率间权衡。
+    </div>`;
+  document.getElementById('step4AdvBtn').disabled=false;
+}
+
+function renderAnomalyPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header"><span style="font-size:13px;font-weight:600;">⚠️ 步骤5：异常场景处理</span><span class="tag tag-green">+4分</span></div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">模拟RAG系统中的典型异常场景，学习处理方法，培养工程容错思维。</p>
+      <div style="display:flex;flex-direction:column;gap:.8rem;">
+        <div style="padding:1rem;border-radius:10px;border:1.5px solid #fde68a;background:#fefce8;">
+          <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:.5rem;">📌 场景1：知识库外提问</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:.8rem;">问题「2024年诺贝尔物理学奖得主是谁？」超出当前知识库范围。</div>
+          <div style="padding:.6rem .9rem;border-radius:7px;background:#fff;border:1px solid var(--border);font-size:12px;color:#b91c1c;">❌ 原始回答：Hinton和Hopfield获奖（模型幻觉）</div>
+          <div style="padding:.6rem .9rem;border-radius:7px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:12px;color:#15803d;margin-top:.4rem;">✅ 兜底回复：抱歉，当前知识库中未收录该信息，建议查阅官方数据源。</div>
+          <button class="btn btn-sm btn-outline" style="margin-top:.5rem;" onclick="this.classList.add('btn-success');this.classList.remove('btn-outline');this.textContent='✓ 已处理';">配置兜底回复</button>
+        </div>
+        <div style="padding:1rem;border-radius:10px;border:1.5px solid #fde68a;background:#fefce8;">
+          <div style="font-size:12px;font-weight:600;color:#92400e;margin-bottom:.5rem;">📌 场景2：检索结果为空</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:.8rem;">相似度阈值过高（0.95）导致无任何片段被召回。</div>
+          <div style="padding:.6rem .9rem;border-radius:7px;background:#fff;border:1px solid var(--border);font-size:12px;color:#b91c1c;">❌ 系统无响应/报错</div>
+          <div style="padding:.6rem .9rem;border-radius:7px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:12px;color:#15803d;margin-top:.4rem;">✅ 修复方案：检测召回结果为空时，自动降低阈值0.1并重试，最多3次。</div>
+          <button class="btn btn-sm btn-outline" style="margin-top:.5rem;" onclick="this.classList.add('btn-success');this.classList.remove('btn-outline');this.textContent='✓ 已修复';">实现自动降阈重试</button>
+        </div>
+      </div>
+      <div style="text-align:right;margin-top:1rem;">
+        <button class="btn btn-success" onclick="completeAdvStep(5)">完成异常处理，提交进阶层</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function completeAdvStep(n){
+  STATE.advDone[n-1] = true;
+  STATE.advScore = STATE.advDone.filter(v=>v).length*4;
+  updateStepFlow('advStepFlow', STATE.advDone, Math.min(n+1,5), 5);
+  document.getElementById('advScore').textContent = STATE.advScore+'/20分';
+  updateTotalScore();
+  showScorePopup(4, '进阶层步骤'+n+'完成');
+  if(n<5){
+    STATE.currentAdvStep = n+1;
+    renderAdvStep(n+1);
+  } else {
+    showToast('🎉 进阶层全部完成！获得20分','success');
+    setTimeout(()=>{ switchLabTab('innovation'); checkInnLock(); },1000);
+  }
+}
+
+// =================== INNOVATION STEPS ===================
+function activateInnStep(n){
+  const maxUnlocked = STATE.innDone.filter(v=>v).length + 1;
+  if(n > maxUnlocked) { showToast('请先完成上一步骤','warn'); return; }
+  STATE.currentInnStep = n;
+  renderInnStep(n);
+}
+
+function renderInnStep(n){
+  updateStepFlow('innStepFlow', STATE.innDone, n, 5);
+  const panel = document.getElementById('innOpPanel');
+  switch(n){
+    case 1: panel.innerHTML = renderMultiDocPanel(); break;
+    case 2: panel.innerHTML = renderMultiRoundPanel(); break;
+    case 3: panel.innerHTML = renderStructuredOutputPanel(); break;
+    case 4: panel.innerHTML = renderFaultPanel(); break;
+    case 5: panel.innerHTML = renderFullOptPanel(); break;
+  }
+}
+
+function renderMultiDocPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header"><span style="font-size:13px;font-weight:600;">📚 步骤1：多文档混合检索</span><span class="tag tag-purple">+4分</span></div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">勾选两套及以上内置文档，构建多源知识库，开展跨文档检索问答。</p>
+      <div class="doc-cards">
+        ${Object.entries(DOCS).map(([k,d])=>`
+          <div class="doc-card ${STATE.selectedDocs.includes(k)?'multi-selected':''}" onclick="toggleMultiDoc('${k}',this)">
+            <div class="doc-card-check">✓</div>
+            <div class="doc-card-icon">${d.icon}</div>
+            <div class="doc-card-name">${d.name}</div>
+            <div class="doc-card-desc">${d.desc}</div>
+          </div>
+        `).join('')}
+      </div>
+      <div id="multiDocInfo" style="margin:.8rem 0;padding:.6rem 1rem;border-radius:8px;background:#f8faff;font-size:12px;color:var(--text2);">
+        ${STATE.selectedDocs.length>0?`已选择 ${STATE.selectedDocs.length} 套文档，共 ${STATE.selectedDocs.reduce((s,k)=>s+DOCS[k].chunks.length,0)} 个语义片段`:'请至少选择2套文档构建多源知识库'}
+      </div>
+      ${renderQAPanel('innovation').match(/(<div class="qa-messages"[\s\S]*?<\/div>)\s*<div class="qa-input-row"[\s\S]*?<\/div>/)?'':''}
+      <div id="multiQAArea">${renderInlineQA('innovation')}</div>
+      <div style="text-align:right;margin-top:.8rem;">
+        <button class="btn btn-primary" id="innStep1Btn" onclick="completeInnStep(1)" ${STATE.selectedDocs.length<2?'disabled':''}>完成多文档搭建，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderInlineQA(layer){
+  return `
+  <div style="margin-top:.6rem;">
+    <div class="qa-messages" id="qaMessages_${layer}" style="min-height:80px;"><div style="text-align:center;font-size:12px;color:var(--text3);padding:1rem;">在下方输入问题测试多文档检索效果</div></div>
+    <div class="qa-input-row" style="margin-top:.5rem;">
+      <input class="qa-input" id="qaInput_${layer}" placeholder="提问..." onkeydown="if(event.key==='Enter')sendQA('${layer}')">
+      <button class="btn btn-primary" onclick="sendQA('${layer}')">发送</button>
+    </div>
+  </div>`;
+}
+
+function toggleMultiDoc(key, el){
+  const idx = STATE.selectedDocs.indexOf(key);
+  if(idx>=0) STATE.selectedDocs.splice(idx,1);
+  else STATE.selectedDocs.push(key);
+  el.classList.toggle('multi-selected', STATE.selectedDocs.includes(key));
+  const info = document.getElementById('multiDocInfo');
+  if(info) info.textContent = STATE.selectedDocs.length>0?`已选择 ${STATE.selectedDocs.length} 套文档，共 ${STATE.selectedDocs.reduce((s,k)=>s+DOCS[k].chunks.length,0)} 个语义片段`:'请至少选择2套文档构建多源知识库';
+  const btn = document.getElementById('innStep1Btn');
+  if(btn) btn.disabled = STATE.selectedDocs.length<2;
+}
+
+function renderMultiRoundPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header"><span style="font-size:13px;font-weight:600;">🔄 步骤2：多轮对话记忆优化</span><span class="tag tag-purple">+4分</span></div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">开启多轮对话记忆，连续提出2-3个关联问题，验证上下文联动效果并优化配置。</p>
+      <div style="padding:1rem;background:#f8faff;border-radius:10px;border:1px solid var(--border);margin-bottom:1rem;">
+        <div style="font-size:12px;font-weight:600;margin-bottom:.6rem;">建议连续提问序列：</div>
+        <div style="font-size:12px;color:var(--text2);display:flex;flex-direction:column;gap:.4rem;">
+          <div>第1轮：<span style="color:var(--primary-light);cursor:pointer;" onclick="fillQA('RAG技术是什么？','innovation')">「RAG技术是什么？」</span></div>
+          <div>第2轮（追问）：<span style="color:var(--primary-light);cursor:pointer;" onclick="fillQA('它的主要应用场景有哪些？','innovation')">「它的主要应用场景有哪些？」</span></div>
+          <div>第3轮（深化）：<span style="color:var(--primary-light);cursor:pointer;" onclick="fillQA('如何评估它的效果？','innovation')">「如何评估它的效果？」</span></div>
+        </div>
+      </div>
+      ${renderInlineQA('multi')}
+      <div style="text-align:right;margin-top:.8rem;">
+        <button class="btn btn-primary" onclick="completeInnStep(2)">完成多轮优化，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderStructuredOutputPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header"><span style="font-size:13px;font-weight:600;">📊 步骤3：结构化输出设计</span><span class="tag tag-purple">+4分</span></div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">选择JSON或表格输出格式，配置提示词模板，生成标准化、可解析的回答。</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem;">
+        <div style="padding:1rem;border-radius:10px;border:2px solid #0ea5e9;background:#e0f2fe;cursor:pointer;" onclick="STATE.outputFormat='json';">
+          <div style="font-size:13px;font-weight:600;color:#0c4a6e;margin-bottom:.4rem;">{} JSON格式</div>
+          <div style="font-size:11px;color:#0369a1;">结构化可解析，适合程序调用和数据分析</div>
+          <pre style="font-size:10px;margin-top:.5rem;color:#0c4a6e;background:rgba(255,255,255,.5);padding:.4rem;border-radius:4px;">{"answer":"...","sources":[...],"confidence":0.92}</pre>
+        </div>
+        <div style="padding:1rem;border-radius:10px;border:2px solid #10b981;background:#d1fae5;cursor:pointer;" onclick="STATE.outputFormat='table';">
+          <div style="font-size:13px;font-weight:600;color:#065f46;margin-bottom:.4rem;">📊 表格格式</div>
+          <div style="font-size:11px;color:#047857;">多维度对比，适合信息汇总展示</div>
+          <pre style="font-size:10px;margin-top:.5rem;color:#065f46;background:rgba(255,255,255,.5);padding:.4rem;border-radius:4px;">| 字段 | 内容 |\n|------|------|\n| 来源 | ... |</pre>
+        </div>
+      </div>
+      ${renderInlineQA('structured')}
+      <div style="text-align:right;margin-top:.8rem;">
+        <button class="btn btn-primary" onclick="completeInnStep(3)">完成结构化输出，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderFaultPanel(){
+  const faults = [
+    {id:'f1',name:'检索失效',tag:'error',desc:'所有问题返回"未找到相关信息"，知识库无法正常召回',hint:'相似度阈值设置过高（>0.9），尝试调低至0.6-0.75',solved:STATE.faultsSolved.includes('f1')},
+    {id:'f2',name:'答非所问',tag:'warn',desc:'回答内容与问题无关，包含大量不相关信息',hint:'top_k过大+阈值过低引入噪声，建议top_k=3，threshold=0.7',solved:STATE.faultsSolved.includes('f2')},
+    {id:'f3',name:'信息冗余',tag:'warn',desc:'回答过长且包含大量重复内容，可读性差',hint:'减小top_k值（建议2-3），使用要点罗列输出格式',solved:STATE.faultsSolved.includes('f3')}
+  ];
+  return `
+  <div class="op-panel">
+    <div class="op-header"><span style="font-size:13px;font-weight:600;">🔧 步骤4：典型故障排查</span><span class="tag tag-purple">+4分</span></div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">系统预设了三类RAG典型故障，请逐一分析原因并选择修复方案。</p>
+      ${faults.map(f=>`
+        <div class="fault-card ${f.solved?'solved':''}" id="fault_${f.id}">
+          <span class="fault-tag ${f.tag}">${f.tag==='error'?'❌ 严重':'⚠️ 警告'}</span>
+          <div class="fault-name">${f.name}</div>
+          <div class="fault-desc">${f.desc}</div>
+          ${!f.solved?`
+            <div style="margin-top:.6rem;padding:.5rem .8rem;background:#fffbeb;border-radius:6px;font-size:11px;color:#92400e;">💡 提示：${f.hint}</div>
+            <button class="btn btn-sm btn-outline" style="margin-top:.6rem;" onclick="solveFault('${f.id}',this)">诊断并修复此故障</button>
+          `:'<div style="margin-top:.5rem;font-size:12px;color:#15803d;font-weight:600;">✅ 已修复</div>'}
+        </div>
+      `).join('')}
+      <div style="text-align:right;margin-top:1rem;">
+        <button class="btn btn-primary" id="step4InnBtn" onclick="completeInnStep(4)" ${STATE.faultsSolved.length<3?'disabled':''}>全部修复完成，下一步</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function solveFault(id, btn){
+  STATE.faultsSolved.push(id);
+  const card = document.getElementById('fault_'+id);
+  if(card){
+    card.classList.add('solved');
+    btn.style.display='none';
+    card.insertAdjacentHTML('beforeend','<div style="margin-top:.5rem;font-size:12px;color:#15803d;font-weight:600;">✅ 已修复</div>');
+  }
+  if(STATE.faultsSolved.length>=3){
+    const b=document.getElementById('step4InnBtn');
+    if(b) b.disabled=false;
+    showToast('✅ 三类故障全部修复！','success');
+  }
+}
+
+function renderFullOptPanel(){
+  return `
+  <div class="op-panel">
+    <div class="op-header"><span style="font-size:13px;font-weight:600;">🚀 步骤5：全链路参数联合优化</span><span class="tag tag-purple">+4分</span></div>
+    <div class="op-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem;">综合调整所有参数，针对特定业务需求优化RAG系统，形成完整参数配置方案，模拟企业级项目优化流程。</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin-bottom:1rem;">
+        <div style="padding:1rem;border-radius:10px;background:#f8faff;border:1px solid var(--border);">
+          <div style="font-size:12px;font-weight:600;margin-bottom:.8rem;">系统参数配置</div>
+          <div class="ctrl-row"><span class="ctrl-label" style="min-width:80px;">top_k</span><input type="range" min="1" max="8" value="${STATE.topK}" oninput="STATE.topK=+this.value;document.getElementById('fullTopK').textContent=this.value;calcOptScore();"><span class="ctrl-value" id="fullTopK">${STATE.topK}</span></div>
+          <div class="ctrl-row"><span class="ctrl-label" style="min-width:80px;">相似度阈值</span><input type="range" min="4" max="9" value="${Math.round(STATE.threshold*10)}" oninput="STATE.threshold=this.value/10;document.getElementById('fullThresh').textContent='0.'+this.value;calcOptScore();"><span class="ctrl-value" id="fullThresh">${STATE.threshold}</span></div>
+          <div class="ctrl-row"><span class="ctrl-label" style="min-width:80px;">输出格式</span><select onchange="STATE.outputFormat=this.value;calcOptScore();"><option value="freetext">自由文本</option><option value="bullet">要点罗列</option><option value="json">JSON</option><option value="table">表格</option></select></div>
+        </div>
+        <div style="padding:1rem;border-radius:10px;background:#f8faff;border:1px solid var(--border);">
+          <div style="font-size:12px;font-weight:600;margin-bottom:.8rem;">系统性能预测</div>
+          <div id="optScore" style="display:flex;flex-direction:column;gap:.4rem;font-size:12px;"></div>
+        </div>
+      </div>
+      ${renderInlineQA('fullopt')}
+      <div style="text-align:right;margin-top:.8rem;">
+        <button class="btn btn-success" onclick="completeInnStep(5)">🎉 提交创新层，完成全部实训</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function calcOptScore(){
+  const el = document.getElementById('optScore');
+  if(!el) return;
+  const k=STATE.topK, t=STATE.threshold;
+  const acc = Math.min(95,60+k*4+(t*10-4)*3);
+  const hal = Math.max(3,20-k*1.5-(t*10-4)*1.2);
+  const speed = Math.max(50,100-k*6);
+  el.innerHTML = `
+    <div>检索准确率：<strong style="color:#15803d;">${acc.toFixed(0)}%</strong></div>
+    <div>幻觉率：<strong style="color:${hal<10?'#15803d':'#d97706'};">${hal.toFixed(0)}%</strong></div>
+    <div>响应速度：<strong style="color:#1d4ed8;">${speed.toFixed(0)}分</strong></div>
+    <div style="margin-top:.4rem;padding:.4rem .6rem;border-radius:6px;background:${acc>80&&hal<12?'#dcfce7':'#fef3c7'};font-size:11px;color:${acc>80&&hal<12?'#15803d':'#92400e'};">
+      ${acc>80&&hal<12?'✅ 当前配置达到企业级标准':'⚠️ 建议继续调优参数'}
+    </div>`;
+}
+
+function completeInnStep(n){
+  STATE.innDone[n-1] = true;
+  STATE.innScore = STATE.innDone.filter(v=>v).length*4;
+  updateStepFlow('innStepFlow', STATE.innDone, Math.min(n+1,5), 5);
+  document.getElementById('innScore').textContent = STATE.innScore+'/20分';
+  updateTotalScore();
+  showScorePopup(4, '创新层步骤'+n+'完成');
+  if(n<5){
+    STATE.currentInnStep = n+1;
+    renderInnStep(n+1);
+  } else {
+    showToast('🎉 创新层全部完成！实训总分'+( STATE.basicScore+STATE.advScore+STATE.innScore)+'分','success');
+    setTimeout(()=>{ showSection('report'); },1200);
+  }
+}
+
+// =================== UTILITIES ===================
+function updateStepFlow(flowId, donelist, activeIdx, total){
+  const flow = document.getElementById(flowId);
+  if(!flow) return;
+  const items = flow.querySelectorAll('.step-item');
+  items.forEach((item,i)=>{
+    item.className = 'step-item';
+    const badge = item.querySelector('.step-badge');
+    if(donelist[i]){
+      item.classList.add('done');
+      if(badge){badge.className='step-badge done';badge.textContent='✅';}
+    } else if(i+1===activeIdx){
+      item.classList.add('active');
+      if(badge){badge.className='step-badge points';badge.textContent=badge.textContent||'+';}
+    } else if(i+1>activeIdx){
+      item.classList.add('locked');
+    }
+  });
+}
+
+function updateTotalScore(){
+  const total = STATE.basicScore + STATE.advScore + STATE.innScore;
+  document.getElementById('headerScore').textContent = total;
+  const pct = total/70*100;
+  document.getElementById('globalProgressBar').style.width = Math.min(pct,100)+'%';
+  updateProgress();
+}
+
+function updateProgress(){
+  let pct = 0;
+  if(STATE.quizPassed) pct+=15;
+  pct += STATE.basicScore/30*25;
+  pct += STATE.advScore/20*25;
+  pct += STATE.innScore/20*25;
+  document.getElementById('globalProgressBar').style.width = Math.min(pct,100)+'%';
+}
+
+function showScorePopup(pts, msg){
+  const overlay = document.createElement('div');
+  overlay.className='overlay';
+  const popup = document.createElement('div');
+  popup.className='score-popup';
+  popup.innerHTML=`<div style="font-size:32px;margin-bottom:.3rem;">🎯</div><h3>${msg}</h3><div class="score-big">+${pts}</div><p style="color:#15803d;font-weight:600;">分</p><button class="btn btn-primary" style="margin-top:1rem;" onclick="this.closest('.score-popup').remove();document.querySelector('.overlay').remove();">继续</button>`;
+  document.body.appendChild(overlay);
+  document.body.appendChild(popup);
+  setTimeout(()=>{overlay.remove();popup.remove();},2200);
+}
+
+function showToast(msg, type='info'){
+  const wrap = document.getElementById('toastWrap');
+  const toast = document.createElement('div');
+  toast.className=`toast ${type}`;
+  toast.innerHTML=`<span>${msg}</span>`;
+  wrap.appendChild(toast);
+  setTimeout(()=>toast.remove(),3000);
+}
+
+function showConceptTip(key){
+  const tips={
+    topk:'top_k（召回数量）：每次检索从向量数据库中返回与问题最相似的前K个文档片段。K越大召回越多，但引入噪声的风险也越高；K太小可能遗漏关键信息。经验值：3-5',
+    threshold:'相似度阈值：只有向量相似度≥阈值的片段才会被采纳。阈值过高导致检索失效（无结果），过低引入无关片段增加幻觉风险。推荐范围：0.65-0.80',
+    chunk:'分块大小：文本被切割成片段的粒度。较小分块（50-100词）检索精准但上下文信息少；较大分块（200-500词）上下文丰富但可能引入噪声。需根据业务场景调整',
+    ctx:'上下文窗口：多轮对话中保留的历史对话轮数。窗口越大，模型"记住"的对话越多，但也消耗更多token资源。一般设置3-6轮为宜',
+    hallucination:'幻觉率（Hallucination Rate）：模型回答中包含错误或虚构信息的比例。RAG通过注入可信外部知识，将幻觉率从纯LLM的20-30%降低到5%以内',
+    recall:'检索准确率：召回的文档片段中与问题真正相关的比例。受top_k、相似度阈值、分块策略共同影响，是衡量RAG检索质量的核心指标'
+  };
+  const box = document.getElementById('conceptTipBox');
+  box.style.display='';
+  box.textContent = tips[key]||'';
+}
+
+function updateReportScores(){
+  document.getElementById('rBasicScore').textContent = STATE.basicScore;
+  document.getElementById('rAdvScore').textContent = STATE.advScore;
+  document.getElementById('rInnScore').textContent = STATE.innScore;
+  document.getElementById('rTotalScore').textContent = STATE.basicScore+STATE.advScore+STATE.innScore;
+}
+
+function fillReportAuto(){
+  const total = STATE.basicScore+STATE.advScore+STATE.innScore;
+  document.getElementById('rPurpose').value='本实验旨在掌握检索增强生成（RAG）技术的完整工作流程，包括文档预处理、文本分块、向量化入库、语义检索和提示词工程等核心环节，理解RAG技术如何有效抑制大语言模型的幻觉问题，提升问答系统的准确性与可靠性。';
+  document.getElementById('rPrinciple').value='RAG（Retrieval-Augmented Generation）检索增强生成的核心原理：\n1. 检索阶段：对原始文档进行预处理（清洗、去重、格式统一）→ 文本分块（保持语义完整性）→ 嵌入模型向量化 → 存入向量数据库\n2. 查询阶段：用户问题向量化 → 向量相似度计算（余弦相似度）→ 召回Top-K个相关片段\n3. 生成阶段：拼接检索片段+用户问题+系统提示词 → 发送给LLM → 生成基于可信知识的准确回答';
+  document.getElementById('rParams').value=`实验参数配置记录：
+- 分块策略：${STATE.chunkMode==='paragraph'?'按段落分块':'固定长度分块'}
+- top_k（召回数量）：${STATE.topK}
+- 相似度阈值：${STATE.threshold}
+- 上下文轮数：${STATE.contextWindow}轮
+- 输出格式：${{'freetext':'自由文本','bullet':'要点罗列','json':'JSON格式','table':'表格'}[STATE.outputFormat]}
+- 实验文档：${STATE.selectedDoc?DOCS[STATE.selectedDoc].name:'未选择'}
+- 多源文档：${STATE.selectedDocs.length>0?STATE.selectedDocs.map(k=>DOCS[k].name).join('、'):'未使用'}`;
+  document.getElementById('rAnalysis').value='对比实验分析：\n保守配置（top_k=2，阈值=0.8）：检索准确率较高（约82%），幻觉率低（约8%），但可能遗漏部分相关信息，适合对准确性要求极高的场景。\n激进配置（top_k=6，阈值=0.5）：召回信息丰富（约88%），但引入噪声导致幻觉率升高（约16%），适合探索性查询。\n结论：top_k=3，阈值=0.7为综合最优配置，在准确率与召回率间取得平衡。';
+  document.getElementById('rFault').value='故障排查过程：\n1. 检索失效（相似度阈值=0.95）：现象-所有问题均返回"未找到相关信息"；原因-阈值过高导致无片段被召回；修复-将阈值降至0.70并重新测试，问题解决。\n2. 答非所问（top_k=8，阈值=0.4）：现象-回答包含大量不相关内容；原因-阈值过低引入噪声片段干扰LLM；修复-调整top_k=3，阈值=0.7，回答质量明显改善。\n3. 信息冗余（top_k=7）：现象-回答内容重复且过长；修复-将top_k减小至3，改用要点罗列格式，可读性大幅提升。';
+  document.getElementById('rConclusion').value=`实验结论：\n1. RAG技术通过"外部知识检索+LLM生成"有效解决了模型幻觉问题，显著提升了回答的准确性。\n2. 参数调优是RAG系统优化的核心：top_k=3，相似度阈值=0.7在大多数场景下表现最佳。\n3. 文本分块策略对检索质量影响显著：按段落分块在语义完整性方面优于固定长度分块。\n4. 工程经验：生产环境中应配置兜底回复机制，避免空召回导致系统无响应。\n\n心得体会：通过本次实训，深刻理解了RAG系统的工程实现细节，认识到参数配置的重要性，掌握了故障排查的基本方法论，建立了规范的工程思维。实训中的"发现问题-分析原因-调整参数-验证效果"闭环思维对未来从事AI工程实践具有重要价值。\n\n本次实训实操总分：${total}/70分`;
+  showToast('✅ 已自动填入实验数据','success');
+}
+
+function submitReport(){
+  if(!document.getElementById('rName').value){showToast('请填写学生姓名','warn');return;}
+  showToast('✅ 实验报告已提交，等待教师批阅','success');
+  document.querySelector('#sectionReport .btn-primary').textContent='已提交';
+  document.querySelector('#sectionReport .btn-primary').disabled=true;
+}
+
+function exportReport(){
+  const name = document.getElementById('rName').value||'同学';
+  const sid = document.getElementById('rStudentId').value||'';
+  const cls = document.getElementById('rClass').value||'';
+  const teacher = document.getElementById('rTeacher').value||'';
+  const total = STATE.basicScore+STATE.advScore+STATE.innScore;
+  const content = `RAG检索增强生成虚拟仿真实验报告
+${'='.repeat(40)}
+学生姓名：${name}    学号：${sid}
+专业班级：${cls}    指导教师：${teacher}
+实验日期：${new Date().toLocaleDateString('zh-CN')}
+实操得分：${total}/70分（基础层${STATE.basicScore}+进阶层${STATE.advScore}+创新层${STATE.innScore}）
+
+一、实验目的
+${document.getElementById('rPurpose').value||'（未填写）'}
+
+二、实验原理
+${document.getElementById('rPrinciple').value||'（未填写）'}
+
+三、参数配置记录
+${document.getElementById('rParams').value||'（未填写）'}
+
+四、效果对比分析
+${document.getElementById('rAnalysis').value||'（未填写）'}
+
+五、故障排查过程
+${document.getElementById('rFault').value||'（未填写）'}
+
+六、实验结论与心得体会
+${document.getElementById('rConclusion').value||'（未填写）'}
+`;
+  const blob = new Blob([content],{type:'text/plain;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`RAG实验报告_${name}_${new Date().toLocaleDateString('zh-CN').replace(/\//g,'-')}.txt`;
+  a.click();
+  showToast('📄 实验报告已导出','success');
+}
+
+// =================== INIT ===================
+switchPrelearnTab('theory');
+renderChunkPreview();
+updateProgress();
+initLabSection();
+calcOptScore();
+</script>
+</body>
+</html>
